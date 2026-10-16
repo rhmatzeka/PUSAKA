@@ -4,5 +4,25 @@
   "installCommand": "npm --prefix web ci",
   "buildCommand": "npm --prefix web run build",
   "outputDirectory": "web/dist",
-  "rewrites": [{ "source": "/api/(.*)", "destination": "/api/index" }]
+  "rewrites": [
+    {
+      "source": "/api/(.*)",
+      "destination": "/api/index"
+    },
+    {
+      "source": "/i/:token(\\d+)",
+      "destination": "/i/index.html"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/i/(.*)",
+      "headers": [
+        {
+          "key": "Referrer-Policy",
+          "value": "no-referrer"
+        }
+      ]
+    }
+  ]
 }

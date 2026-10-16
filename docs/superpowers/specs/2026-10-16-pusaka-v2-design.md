@@ -104,8 +104,9 @@ struct Ijazah {
 | `locked(uint256) view` | publik | selalu `true` (ERC-5192) |
 
 - **Soulbound:** `_update` menolak semua perpindahan selain mint. `supportsInterface` melaporkan ERC-721 dan ERC-5192 (`0xb45a3c0e`).
+- **Pemisahan tugas ditegakkan di kontrak:** penanda tangan EIP-712 tidak boleh sama dengan pengirim transaksi (`PemisahanTugasDilanggar`), sehingga satu wallet yang memegang dua peran tetap tidak bisa menerbitkan atau mencabut sendirian. Admin (`DEFAULT_ADMIN_ROLE`) tetap pihak tepercaya yang membagikan peran; asumsi ini ditulis terbuka di skripsi.
 - **Ijazah tetap sah walau peran pejabatnya dicabut.** `periksa` tidak mengecek peran penanda tangan saat ini, sama seperti ijazah kertas yang tetap sah setelah rektornya berganti. Peran hanya dicek saat terbit dan saat cabut.
-- **Error:** `HashSudahTerbit`, `PenandaTanganTidakBerwenang`, `TandaTanganKedaluwarsa`, `MetadataTidakCocok`, `IjazahTidakAda`, `SudahDicabut`, `TidakDapatDipindahtangankan`, `PanjangTidakSama`, `BatchTerlaluBesar`.
+- **Error:** `HashSudahTerbit`, `PenandaTanganTidakBerwenang`, `TandaTanganKedaluwarsa`, `MetadataTidakCocok`, `IjazahTidakAda`, `SudahDicabut`, `TidakDapatDipindahtangankan`, `PanjangTidakSama`, `BatchTerlaluBesar`, `PemisahanTugasDilanggar`, `AlasanTidakCocok`, `HashKosong`.
 - **Event:** `Diterbitkan(uint256 indexed tokenId, address indexed penerima, bytes32 indexed docHash, address penandaTangan)`, `Dicabut(uint256 indexed tokenId, string alasan)`, `Locked(uint256 tokenId)`.
 
 ### 5.3 Tes Foundry
@@ -252,7 +253,7 @@ Diturunkan dari aplikasi pendamping Quantum Wallet dan Raycast (mockup v3 di `.s
 
 - **Latar:** ruang hitam-biru dengan pendar biru di belakang objek dan titik bintang halus. Tidak ada kartu kaca dekoratif.
 - **HUD:** label mono kapital berjarak lebar di sudut layar (`PSK-OP / BAAK · AKTIF`, `WALLET / 41C2....9E0A`). Garis skala di tepi kiri membawa angka nyata (jumlah tercatat, siap, menunggu).
-- **Objek:** Segel Pusaka 3D kecil (three.js, satu instance bersama) dengan cincin orbit. Statusnya ikut berubah warna.
+- **Objek:** Segel Pusaka berupa keping heksagon (CSS) dengan cincin orbit di halaman dalam; versi three.js hanya di beranda supaya halaman periksa ringan. Warna pendarnya ikut status.
 - **Operator:** jendela perintah gaya Raycast. Kotak cari dengan chip filter, daftar kiri, detail label–nilai kanan, bilah bawah berisi aksi utama `↵` dan `Aksi ⌘K`, plus dok ikon di bawah jendela. Semua aksi bisa dijalankan dengan keyboard.
 - **Pejabat (`/meja`):** gaya aplikasi Quantum murni. Ijazah melayang miring di tengah dengan orbit, data lulusan besar, tombol berkurung `‹ Tanda tangani ↵ ›` dan `‹ Tolak X ›`, serta "Setujui sisanya".
 - **Hasil verifikasi:** baris bukti gaya daftar aset Quantum (ikon bulat, nama bukti, keterangan mono hijau "↑ COCOK 100%", nilai mono di kanan).

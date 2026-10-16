@@ -10,7 +10,7 @@ Spec v2 mencakup beberapa subsistem yang masing-masing bisa diuji sendiri. Karen
 | 02 | Kontrak `PusakaIjazah` v2 | 2 | `forge test` lulus (unit, fuzz, invariant), laporan gas, ABI diekspor, deploy ke Anvil | ✅ `2026-10-16-pusaka-v2-02-kontrak.md` |
 | 03 | Crate `pusaka-core` (native + WASM) | 3 | Keccak, amplop AES-GCM, EIP-712, CSV teruji; paket WASM terbangun | ✅ `2026-10-16-pusaka-v2-03-core.md` |
 | 04 | Crate `pusaka-api` + Postgres + Privy + Pinata | 4 | Tes integrasi alur draf → setujui → terbit → cabut | ✅ `2026-10-16-pusaka-v2-04-api.md` |
-| 05 | Web: `/periksa` dan `/i/[tokenId]` | 5 | Tiga jalur verifikasi terhadap Anvil (Playwright) | — |
+| 05 | Web: `/periksa` dan `/i/[tokenId]` | 5 | Tiga jalur verifikasi terhadap Anvil (Playwright) | ✅ `2026-10-16-pusaka-v2-05-periksa.md` |
 | 06 | Web: masuk Privy, `/op`, `/op/unggah`, `/meja`, pencabutan | 6 | E2E alur terbit dan cabut | — |
 | 07 | Web: `/alumni` | 7 | Alumni baru melihat ijazahnya | — |
 | 08 | Web: beranda 3D | 8 | Enam babak + fallback statis | — |
