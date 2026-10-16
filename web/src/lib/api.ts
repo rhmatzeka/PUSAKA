@@ -96,6 +96,16 @@ export class GalatApi extends Error {
   }
 }
 
+export interface IjazahMilik {
+  token_id: number;
+  status: StatusDraf;
+  nama: string;
+  nomor_ijazah: string;
+  prodi: string;
+  gelar: string;
+  tanggal_lulus: string;
+}
+
 export interface KueriDraf {
   status?: StatusDraf;
   cari?: string;
@@ -117,6 +127,7 @@ export interface Api {
   setujuiCabut(id: string, sig: Hex, batasWaktu: bigint): Promise<{ id: string; status: StatusCabut }>;
   selesaiCabut(id: string, txHash: Hex): Promise<{ id: string; status: StatusCabut }>;
   kunci(tokenId: number): Promise<{ token_id: number; status: StatusDraf; kunci: Hex }>;
+  milik(): Promise<{ data: IjazahMilik[] }>;
 }
 
 export function buatApi(token: () => Promise<string>, dasar = ''): Api {
@@ -168,5 +179,6 @@ export function buatApi(token: () => Promise<string>, dasar = ''): Api {
       json('POST', `/api/cabut/${encodeURIComponent(id)}/setujui`, { sig, batas_waktu: Number(batasWaktu) }),
     selesaiCabut: (id, txHash) => json('POST', `/api/cabut/${encodeURIComponent(id)}/selesai`, { tx_hash: txHash }),
     kunci: (tokenId) => minta('GET', `/api/kunci/${tokenId}`),
+    milik: () => minta('GET', '/api/milik'),
   };
 }

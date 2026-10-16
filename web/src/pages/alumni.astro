@@ -1,0 +1,8 @@
+---
+import Alumni from '../islands/Alumni';
+import Ruang from '../layouts/Ruang.astro';
+---
+
+<Ruang judul="Ijazah saya" deskripsi="Ijazah digital alumni Universitas Pamulang: tautan berkunci, lembar QR, dan PDF." tanpaReferer>
+  <Alumni client:only="react" />
+</Ruang>

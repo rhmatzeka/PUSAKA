@@ -7,7 +7,7 @@ const DATA = new URL('./.data/', import.meta.url).pathname;
 // Alur berurutan: tiap tes melanjutkan keadaan tes sebelumnya (satu Anvil + satu basis data).
 test.describe.configure({ mode: 'serial' });
 
-async function masukSebagai(page: Page, label: 'Operator BAAK' | 'Rektor', ke: '/op' | '/meja') {
+async function masukSebagai(page: Page, label: 'Operator BAAK' | 'Rektor' | 'Alumni', ke: '/op' | '/meja' | '/alumni') {
   await page.goto(`/masuk/?ke=${ke}`);
   await page.getByRole('button', { name: `Masuk sebagai ${label}` }).click();
   // Cocokkan pathname, bukan seluruh URL: `/masuk/?ke=/op` juga berakhiran `/op`.
@@ -143,4 +143,19 @@ test('pencabutan: operator meminta, Rektor menandatangani, operator mengirim ke 
   await expect(kabar(page)).toHaveText(/Ijazah #\d+ dicabut/);
   await page.goto(tautanSiti);
   await expect(page.getByTestId('status')).toHaveText('↓ Dicabut');
+});
+
+test('alumni melihat ijazahnya, mencetak QR, dan mengunduh PDF', async ({ page }) => {
+  await masukSebagai(page, 'Alumni', '/alumni');
+  const kartu = page.getByTestId('ijazah-alumni');
+  await expect(kartu).toHaveCount(1);
+  await expect(kartu).toContainText('Agus Pratama');
+  await expect(kartu.getByTestId('status')).toHaveText('↑ Asli · tercatat');
+  await kartu.getByRole('button', { name: 'Lembar QR' }).click();
+  await expect(page.getByTestId('tautan-qr')).toHaveText(/\/i\/\d+#k=[A-Za-z0-9_-]{43}$/);
+  await page.getByRole('button', { name: 'Tutup' }).click();
+  const unduhan = page.waitForEvent('download');
+  await kartu.getByRole('button', { name: 'Unduh PDF' }).click();
+  expect((await unduhan).suggestedFilename()).toBe('ijazah-UNPAM-2026-0011.pdf');
+  await expect(page.getByTestId('kabar')).toHaveText(/sidik jari cocok/);
 });

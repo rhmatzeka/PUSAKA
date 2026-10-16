@@ -4,6 +4,7 @@ pub mod cabut;
 pub mod draf;
 pub mod ipfs;
 pub mod kunci;
+pub mod milik;
 pub mod sesi;
 pub mod terbit;
 pub mod ttd;
@@ -27,4 +28,5 @@ pub fn semua() -> Router<Negara> {
         .route("/api/cabut/{id}/setujui", post(cabut::setujui))
         .route("/api/cabut/{id}/selesai", post(cabut::selesai))
         .route("/api/kunci/{token_id}", get(kunci::ambil))
+        .route("/api/milik", get(milik::daftar))
 }

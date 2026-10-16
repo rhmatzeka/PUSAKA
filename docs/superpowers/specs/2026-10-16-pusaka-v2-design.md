@@ -184,6 +184,7 @@ Metadata publik tidak berisi data pribadi apa pun.
 | `POST /api/cabut/{id}/setujui` | pejabat | tanda tangan `Pencabutan` |
 | `POST /api/cabut/{id}/selesai` | operator | body `{tx_hash}` |
 | `GET /api/kunci/{tokenId}` | pemilik token, operator | kunci AES ijazah (didekripsi dari kunci master) |
+| `GET /api/milik` | login | ijazah tercatat milik wallet pengguna (indeks; status tetap dibaca dari kontrak) |
 
 **Status draf:** `MENUNGGU_TTD` → `DITANDATANGANI` → `TERBIT`; `MENUNGGU_TTD` → `DITOLAK` → (perbaikan) `MENUNGGU_TTD`. `DITANDATANGANI` yang melewati `batasWaktu` (default 7 hari) kembali ke `MENUNGGU_TTD`. `TERBIT` → `DICABUT` setelah pencabutan selesai. Kunci JSON memakai `snake_case`.
 
