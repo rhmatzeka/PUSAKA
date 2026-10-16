@@ -6,6 +6,7 @@ pub mod csv_lulusan;
 pub mod eip712;
 pub mod hash;
 pub mod heks;
+pub mod ttd;
 
 #[cfg(feature = "wasm")]
 pub mod wasm;

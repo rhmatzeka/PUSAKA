@@ -161,7 +161,7 @@ Metadata publik tidak berisi data pribadi apa pun.
 
 ### 7.2 `crates/pusaka-api` (axum)
 
-**Lapisan:** `config` (env divalidasi saat start) → `auth` (token Privy) → `peran` (cek on-chain via alloy) → `handler` → `repo` (sqlx) / `privy` / `pinata` / `kontrak`.
+**Lapisan:** `config` (env divalidasi saat start) → `auth` (token Privy) → `peran` (cek on-chain lewat JSON-RPC `hasRole`; tanpa alloy supaya build Vercel ringan) → `handler` → `repo` (sqlx) / `privy` / `pinata` / `kontrak`.
 
 **Autentikasi.** Header `Authorization: Bearer <access token Privy>` diverifikasi ES256 dengan `PRIVY_VERIFICATION_KEY`, `aud = PRIVY_APP_ID`, dan `iss = privy.io`. Daftar wallet milik pengguna diambil dari Privy REST API dan di-cache 5 menit per DID. Peran dibaca dari kontrak (`hasRole`) untuk wallet-wallet itu.
 
@@ -170,20 +170,21 @@ Metadata publik tidak berisi data pribadi apa pun.
 | Method & rute | Peran | Fungsi |
 |---|---|---|
 | `GET /api/sesi` | login | DID, wallet, peran |
-| `POST /api/ipfs` | operator | unggah amplop atau metadata ke Pinata (maks 5 MB) |
+| `POST /api/ipfs` | operator | unggah amplop atau metadata ke Pinata (maks 4 MiB, batas body fungsi Vercel) |
 | `POST /api/draf` | operator | buat 1..50 draf; tiap draf membuat atau mengambil wallet alumni dari email lewat Privy |
 | `GET /api/draf?status=&cari=&halaman=` | operator, pejabat | daftar draf |
 | `GET /api/draf/{id}` | operator, pejabat | detail + kunci (untuk pratinjau) |
-| `POST /api/draf/{id}/setujui` | pejabat | body `{sig, batasWaktu}`; server memulihkan alamat EIP-712, mewajibkan alamat itu milik pengguna dan memegang `PENANDATANGAN_ROLE` |
+| `POST /api/draf/{id}/setujui` | pejabat | body `{sig, batas_waktu}`; server memulihkan alamat EIP-712, mewajibkan alamat itu milik pengguna dan memegang `PENANDATANGAN_ROLE` |
 | `POST /api/draf/{id}/tolak` | pejabat | body `{alasan}` |
 | `POST /api/draf/{id}/kirim-ulang` | operator | setelah draf ditolak dan diperbaiki |
-| `POST /api/terbit` | operator | body `{txHash}`; server membaca receipt, mencocokkan event `Diterbitkan` dengan draf, lalu menandai TERBIT + `tokenId` |
-| `POST /api/cabut` | operator | buat permintaan cabut `{tokenId, alasan}` |
+| `POST /api/terbit` | operator | body `{tx_hash}`; server membaca receipt, mencocokkan event `Diterbitkan` dengan draf, lalu menandai TERBIT + `tokenId` |
+| `POST /api/cabut` | operator | buat permintaan cabut `{token_id, alasan}` |
+| `GET /api/cabut?status=` | operator, pejabat | daftar permintaan cabut |
 | `POST /api/cabut/{id}/setujui` | pejabat | tanda tangan `Pencabutan` |
-| `POST /api/cabut/{id}/selesai` | operator | body `{txHash}` |
+| `POST /api/cabut/{id}/selesai` | operator | body `{tx_hash}` |
 | `GET /api/kunci/{tokenId}` | pemilik token, operator | kunci AES ijazah (didekripsi dari kunci master) |
 
-**Status draf:** `MENUNGGU_TTD` → `DITANDATANGANI` → `TERBIT`; `MENUNGGU_TTD` → `DITOLAK` → (perbaikan) `MENUNGGU_TTD`. `DITANDATANGANI` yang melewati `batasWaktu` (default 7 hari) kembali ke `MENUNGGU_TTD`.
+**Status draf:** `MENUNGGU_TTD` → `DITANDATANGANI` → `TERBIT`; `MENUNGGU_TTD` → `DITOLAK` → (perbaikan) `MENUNGGU_TTD`. `DITANDATANGANI` yang melewati `batasWaktu` (default 7 hari) kembali ke `MENUNGGU_TTD`. `TERBIT` → `DICABUT` setelah pencabutan selesai. Kunci JSON memakai `snake_case`.
 
 **Error:** `thiserror` dipetakan ke JSON `{ "kode": "PERAN_TIDAK_CUKUP", "pesan": "…" }` dengan status HTTP yang tepat. Tidak ada `unwrap`/`expect` di jalur request. Logging memakai `tracing`.
 
@@ -191,9 +192,10 @@ Metadata publik tidak berisi data pribadi apa pun.
 
 - `draf(id uuid pk, dibuat timestamptz, diubah timestamptz, status text, nama text, nim text, prodi text, gelar text, nomor_ijazah text, tanggal_lulus date, email text, penerima text, doc_hash bytea unique, uri text, cid_amplop text, alasan_tolak text, token_id bigint null, dibuat_oleh text)`
 - `tanda_tangan(id uuid pk, jenis text check (jenis in ('penerbitan','pencabutan')), rujukan_id uuid, penanda_tangan text, sig bytea, batas_waktu timestamptz, dibuat timestamptz)`
-- `kunci_ijazah(draf_id uuid pk references draf, kunci_terenkripsi bytea)`. Dienkripsi AES-256-GCM dengan `KUNCI_MASTER` (env).
+- `kunci_ijazah(draf_id uuid pk references draf, kunci_terenkripsi bytea)`. Dienkripsi AES-256-GCM dengan `KUNCI_MASTER` (env), AAD = id draf.
 - `permintaan_cabut(id uuid pk, token_id bigint, alasan text, status text, dibuat_oleh text, dibuat timestamptz)`
 - `audit_log(id bigserial, waktu timestamptz, pelaku text, aksi text, rujukan text, detail jsonb)`
+- Batas laju 120 aksi tulis/menit/DID dihitung dari `audit_log`. Migrasi dijalankan manual (`cargo run -p pusaka-api -- migrasi`) dengan koneksi langsung Neon.
 
 ### 7.4 Vercel
 
@@ -284,7 +286,7 @@ Diturunkan dari aplikasi pendamping Quantum Wallet dan Raycast (mockup v3 di `.s
 - **Pertimbangan desain yang ditulis terbuka di skripsi:** server menyimpan kunci AES (terenkripsi kunci master) supaya alumni yang kehilangan tautan bisa memulihkannya.
 - **Tanda tangan EIP-712** terikat ke chainId dan alamat kontrak (anti-replay), punya batas waktu, dan ikut mengikat `metadataHash`.
 - **Kunci di fragmen URL:** bagian `#k=` tidak terkirim ke server, dan halaman `/i/*` memasang `Referrer-Policy: no-referrer`.
-- **Pembatasan input:** ukuran berkas maks 5 MB, batch maks 50, rate limit sederhana per DID di endpoint tulis.
+- **Pembatasan input:** ukuran berkas maks 4 MiB, batch maks 50, rate limit sederhana per DID di endpoint tulis.
 - **Audit log** untuk setiap aksi operator dan pejabat.
 
 ## 11. Pengujian

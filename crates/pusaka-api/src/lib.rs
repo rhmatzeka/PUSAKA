@@ -1,11 +1,27 @@
 //! Backend PUSAKA. Router yang sama dijalankan di Vercel (`api/index.rs`)
 //! dan di laptop (`src/main.rs`).
 
+pub mod auth;
+pub mod config;
+pub mod db;
+pub mod galat;
+pub mod kunci;
+pub mod layanan;
+pub mod masukan;
+pub mod negara;
+pub mod pinata;
+pub mod privy;
+pub mod rantai;
+pub mod rute;
+pub mod validasi;
+
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
-use axum::routing::get;
+use axum::routing::{any, get};
 use axum::{Json, Router};
 use serde::Serialize;
+
+use crate::galat::{Galat, GalatJson};
 
 #[derive(Serialize)]
 struct Kesehatan {
@@ -13,16 +29,30 @@ struct Kesehatan {
     versi: &'static str,
 }
 
-#[derive(Serialize)]
-struct GalatJson {
-    kode: &'static str,
-    pesan: &'static str,
+/// Router lengkap dengan state.
+pub fn router(n: negara::Negara) -> Router {
+    akhiri(rute::semua().with_state(n))
 }
 
-/// Semua rute HTTP PUSAKA.
-pub fn router() -> Router {
-    Router::new()
-        .route("/api/kesehatan", get(kesehatan))
+/// Rute yang selalu ada: kesehatan dan jawaban JSON untuk 404/405.
+pub fn router_dasar() -> Router {
+    akhiri(Router::new())
+}
+
+/// Dipakai saat env belum lengkap: semua `/api/*` selain kesehatan menjawab 503
+/// dengan nama env yang kurang (tanpa nilai rahasia).
+pub fn router_darurat(pesan: String) -> Router {
+    akhiri(Router::new().route(
+        "/api/{*sisa}",
+        any(move || {
+            let pesan = pesan.clone();
+            async move { Galat::KonfigurasiTidakLengkap(pesan) }
+        }),
+    ))
+}
+
+fn akhiri(r: Router) -> Router {
+    r.route("/api/kesehatan", get(kesehatan))
         .method_not_allowed_fallback(metode_tidak_diizinkan)
         .fallback(tidak_ditemukan)
 }
@@ -34,14 +64,8 @@ async fn kesehatan() -> Json<Kesehatan> {
     })
 }
 
-async fn tidak_ditemukan() -> impl IntoResponse {
-    (
-        StatusCode::NOT_FOUND,
-        Json(GalatJson {
-            kode: "TIDAK_DITEMUKAN",
-            pesan: "Rute tidak ditemukan",
-        }),
-    )
+async fn tidak_ditemukan() -> Galat {
+    Galat::TidakDitemukan("Rute tidak ditemukan".into())
 }
 
 async fn metode_tidak_diizinkan() -> impl IntoResponse {
@@ -49,7 +73,28 @@ async fn metode_tidak_diizinkan() -> impl IntoResponse {
         StatusCode::METHOD_NOT_ALLOWED,
         Json(GalatJson {
             kode: "METODE_TIDAK_DIIZINKAN",
-            pesan: "Metode HTTP tidak diizinkan untuk rute ini",
+            pesan: "Metode HTTP tidak diizinkan untuk rute ini".into(),
         }),
     )
+}
+
+/// Router lengkap dari env. Bila env belum lengkap/valid, router darurat yang
+/// menjelaskan env apa yang kurang (kesehatan tetap jalan).
+pub fn router_dari_env() -> Router {
+    match config::Konfigurasi::dari_env().and_then(negara::Negara::dari_konfigurasi) {
+        Ok(n) => router(n),
+        Err(e) => {
+            tracing::error!(galat = %e, "konfigurasi tidak lengkap");
+            router_darurat(e.to_string())
+        }
+    }
+}
+
+/// Log `tracing` ke stdout (dibaca Vercel). Aman dipanggil lebih dari sekali.
+pub fn pasang_log() {
+    let _ = tracing_subscriber::fmt()
+        .with_env_filter(
+            tracing_subscriber::EnvFilter::try_from_default_env().unwrap_or_else(|_| "info".into()),
+        )
+        .try_init();
 }
