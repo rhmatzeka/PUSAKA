@@ -834,6 +834,7 @@ git commit -m "feat(kontrak): terbitkanBatch, cabut bertanda tangan pejabat, daf
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.28;
 
+import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import {PusakaIjazah} from "../src/PusakaIjazah.sol";
 import {Dasar} from "./Dasar.sol";
 
@@ -878,6 +879,9 @@ contract FuzzTest is Dasar {
 
     function testFuzz_sigSampah(bytes memory sig) public {
         PusakaIjazah.Penerbitan memory p = _penerbitan(DOC, URI);
+        // Fuzzer bisa memakai konstanta dari kode tes, termasuk tanda tangan sah rektor; itu bukan sampah.
+        (address penandaTangan, ECDSA.RecoverError galat,) = ECDSA.tryRecover(k.digestPenerbitan(p), sig);
+        vm.assume(galat != ECDSA.RecoverError.NoError || penandaTangan != rektor);
         vm.prank(operator);
         vm.expectPartialRevert(PusakaIjazah.PenandaTanganTidakBerwenang.selector);
         k.terbitkan(p, sig, URI);
