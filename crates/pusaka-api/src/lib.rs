@@ -1,14 +1,17 @@
 //! Backend PUSAKA. Router yang sama dijalankan di Vercel (`api/index.rs`)
 //! dan di laptop (`src/main.rs`).
 
+pub mod auth;
 pub mod config;
 pub mod galat;
 pub mod kunci;
 pub mod layanan;
 pub mod masukan;
+pub mod negara;
 pub mod pinata;
 pub mod privy;
 pub mod rantai;
+pub mod rute;
 
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
@@ -22,6 +25,11 @@ use crate::galat::{Galat, GalatJson};
 struct Kesehatan {
     layanan: &'static str,
     versi: &'static str,
+}
+
+/// Router lengkap dengan state.
+pub fn router(n: negara::Negara) -> Router {
+    akhiri(rute::semua().with_state(n))
 }
 
 /// Rute yang selalu ada: kesehatan dan jawaban JSON untuk 404/405.
