@@ -27,3 +27,15 @@ async fn rute_tidak_dikenal_404_json() {
     assert_eq!(status, StatusCode::NOT_FOUND);
     assert_eq!(body["kode"], "TIDAK_DITEMUKAN");
 }
+
+#[tokio::test]
+async fn metode_salah_405_json() {
+    let res = pusaka_api::router()
+        .oneshot(Request::post("/api/kesehatan").body(Body::empty()).unwrap())
+        .await
+        .unwrap();
+    assert_eq!(res.status(), StatusCode::METHOD_NOT_ALLOWED);
+    let bytes = res.into_body().collect().await.unwrap().to_bytes();
+    let body: Value = serde_json::from_slice(&bytes).expect("body 405 harus JSON");
+    assert_eq!(body["kode"], "METODE_TIDAK_DIIZINKAN");
+}

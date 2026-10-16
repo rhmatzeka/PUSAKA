@@ -23,6 +23,7 @@ struct GalatJson {
 pub fn router() -> Router {
     Router::new()
         .route("/api/kesehatan", get(kesehatan))
+        .method_not_allowed_fallback(metode_tidak_diizinkan)
         .fallback(tidak_ditemukan)
 }
 
@@ -39,6 +40,16 @@ async fn tidak_ditemukan() -> impl IntoResponse {
         Json(GalatJson {
             kode: "TIDAK_DITEMUKAN",
             pesan: "Rute tidak ditemukan",
+        }),
+    )
+}
+
+async fn metode_tidak_diizinkan() -> impl IntoResponse {
+    (
+        StatusCode::METHOD_NOT_ALLOWED,
+        Json(GalatJson {
+            kode: "METODE_TIDAK_DIIZINKAN",
+            pesan: "Metode HTTP tidak diizinkan untuk rute ini",
         }),
     )
 }
