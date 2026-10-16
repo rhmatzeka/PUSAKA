@@ -1,14 +1,14 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import BarisBukti from '../components/BarisBukti';
 import Kerangka from '../components/Kerangka';
 import LembarQr from '../components/LembarQr';
 import Segel from '../components/Segel';
+import { pesanUnduh, tampilanKartu, type StatusRantai } from '../lib/alumni';
+import type { Hex } from 'viem';
 import type { IjazahMilik } from '../lib/api';
 import { tanggal } from '../lib/format';
-import type { Ijazah } from '../lib/jenis';
 import { kunciDariFragmen } from '../lib/kunci';
 import { buatSumber, type SumberRantai } from '../lib/sumber';
-import { STATUS } from '../lib/tampilan';
 import { tautanBerkunci } from '../lib/tautan';
 import { cekToken, statusIjazah } from '../lib/verifikasi';
 import PenyediaSesi from './sesi/PenyediaSesi';
@@ -21,8 +21,8 @@ const DOK_ALUMNI = [
 
 interface Kartu {
   milik: IjazahMilik;
-  /** Status dibaca dari kontrak; `null` bila belum terbaca. */
-  rantai: Ijazah | null;
+  /** Status dibaca dari kontrak per token; gagal baca tidak menghapus kartu lain. */
+  rantai: StatusRantai;
 }
 
 function Isi() {
@@ -31,12 +31,28 @@ function Isi() {
   const [kabar, setKabar] = useState<{ teks: string; nada?: 'ok' | 'bad' } | null>(null);
   const [qr, setQr] = useState<{ tautan: string; nama: string; nomor: string } | null>(null);
   const [sumber, setSumber] = useState<SumberRantai | null>(null);
+  const [sibuk, setSibuk] = useState(false);
+  const kunciTersimpan = useRef(new Map<number, Hex>());
 
   const muat = useCallback(async () => {
-    const s = await buatSumber(j);
-    setSumber(s);
+    setKabar(null);
     const { data } = await api.milik();
-    setKartu(await Promise.all(data.map(async (m) => ({ milik: m, rantai: await s.ijazah(BigInt(m.token_id)) }))));
+    let s: SumberRantai | null = null;
+    try {
+      s = await buatSumber(j);
+      setSumber(s);
+    } catch {
+      // Daftar tetap tampil; status menunggu blockchain terjangkau.
+    }
+    const baca = async (m: IjazahMilik): Promise<StatusRantai> => {
+      if (!s) return 'galat';
+      try {
+        return await s.ijazah(BigInt(m.token_id));
+      } catch {
+        return 'galat';
+      }
+    };
+    setKartu(await Promise.all(data.map(async (m) => ({ milik: m, rantai: await baca(m) }))));
   }, [api, j]);
 
   useEffect(() => {
@@ -47,14 +63,32 @@ function Isi() {
   }, [muat]);
 
   async function tautan(m: IjazahMilik): Promise<string> {
-    const { kunci } = await api.kunci(m.token_id);
+    let kunci = kunciTersimpan.current.get(m.token_id);
+    if (!kunci) {
+      kunci = (await api.kunci(m.token_id)).kunci;
+      kunciTersimpan.current.set(m.token_id, kunci);
+    }
     return tautanBerkunci(location.origin, m.token_id, kunci);
   }
 
   const gagal = (e: unknown) => setKabar({ teks: e instanceof Error ? e.message : String(e), nada: 'bad' });
 
+  /** Satu aksi pada satu waktu; tombol nonaktif selama berjalan. */
+  async function aksi(kerja: () => Promise<void>) {
+    if (sibuk) return;
+    setSibuk(true);
+    setKabar(null);
+    try {
+      await kerja();
+    } catch (e) {
+      gagal(e);
+    } finally {
+      setSibuk(false);
+    }
+  }
+
   async function unduh(m: IjazahMilik) {
-    if (!sumber) return;
+    if (!sumber) throw new Error('Blockchain belum terjangkau. Coba lagi sebentar.');
     const t = await tautan(m);
     const h = await cekToken(BigInt(m.token_id), kunciDariFragmen(new URL(t).hash), sumber);
     if (h.jenis !== 'lengkap') throw new Error('Berkas ijazah tidak cocok dengan catatan blockchain. Hubungi BAAK.');
@@ -62,9 +96,11 @@ function Isi() {
     const a = document.createElement('a');
     a.href = url;
     a.download = `ijazah-${m.nomor_ijazah.replace(/[^A-Za-z0-9]+/g, '-')}.pdf`;
+    document.body.append(a);
     a.click();
+    a.remove();
     setTimeout(() => URL.revokeObjectURL(url), 10_000);
-    setKabar({ teks: 'PDF diunduh (sidik jari cocok dengan blockchain)', nada: 'ok' });
+    setKabar(pesanUnduh(h.ijazah));
   }
 
   return (
@@ -90,7 +126,8 @@ function Isi() {
           </div>
         )}
         {kartu?.map(({ milik: m, rantai }) => {
-          const t = rantai ? STATUS[statusIjazah(rantai)] : STATUS.TIDAK_ADA;
+          const t = tampilanKartu(rantai);
+          const terbaca = rantai !== null && rantai !== 'galat' ? rantai : null;
           return (
             <article key={m.token_id} data-testid="ijazah-alumni" style={{ marginTop: 18 }}>
               <div className="baris-hud">
@@ -101,40 +138,51 @@ function Isi() {
                   </b>
                 </div>
                 <div className="hud" style={{ textAlign: 'right' }}>
-                  Terbit<b>{rantai ? tanggal(rantai.waktuTerbit) : '—'}</b>
+                  Terbit<b>{terbaca ? tanggal(terbaca.waktuTerbit) : '—'}</b>
                 </div>
               </div>
               <h1 className="judul">{m.nama}</h1>
               <p className="sub">
                 {m.gelar} · {m.prodi} · {m.nomor_ijazah}
               </p>
-              {rantai && statusIjazah(rantai) === 'DICABUT' && (
-                <BarisBukti bukti={[{ ikon: '⛓', nama: 'Status di blockchain', ket: `↓ Dicabut ${tanggal(rantai.waktuCabut)}`, nada: 'bad' }]} />
+              {terbaca && statusIjazah(terbaca) === 'DICABUT' && (
+                <BarisBukti bukti={[{ ikon: '⛓', nama: 'Status di blockchain', ket: `↓ Dicabut ${tanggal(terbaca.waktuCabut)}`, nada: 'bad' }]} />
+              )}
+              {rantai === 'galat' && (
+                <p className="catatan">
+                  Status di blockchain belum terbaca.{' '}
+                  <button type="button" className="br" onClick={() => void aksi(muat)} disabled={sibuk}>
+                    Coba lagi
+                  </button>
+                </p>
               )}
               <div className="aksi">
-                <button type="button" className="br" data-utama onClick={() => void tautan(m).then((x) => location.assign(x)).catch(gagal)}>
+                <button type="button" className="br" data-utama disabled={sibuk} onClick={() => void aksi(async () => location.assign(await tautan(m)))}>
                   Buka halaman ijazah
                 </button>
                 <button
                   type="button"
                   className="br"
-                  onClick={() => void tautan(m).then((x) => setQr({ tautan: x, nama: m.nama, nomor: m.nomor_ijazah })).catch(gagal)}
+                  disabled={sibuk}
+                  onClick={() => void aksi(async () => setQr({ tautan: await tautan(m), nama: m.nama, nomor: m.nomor_ijazah }))}
                 >
                   Lembar QR
                 </button>
                 <button
                   type="button"
                   className="br"
+                  disabled={sibuk}
                   onClick={() =>
-                    void tautan(m)
-                      .then((x) => navigator.clipboard?.writeText(x))
-                      .then(() => setKabar({ teks: 'Tautan berkunci disalin. Bagikan hanya ke pihak yang perlu memeriksa.', nada: 'ok' }))
-                      .catch(gagal)
+                    void aksi(async () => {
+                      if (!navigator.clipboard) throw new Error('Peramban ini tidak mengizinkan salin otomatis. Pakai Lembar QR.');
+                      await navigator.clipboard.writeText(await tautan(m));
+                      setKabar({ teks: 'Tautan berkunci disalin. Bagikan hanya ke pihak yang perlu memeriksa.', nada: 'ok' });
+                    })
                   }
                 >
                   Salin tautan berkunci
                 </button>
-                <button type="button" className="br" onClick={() => void unduh(m).catch(gagal)}>
+                <button type="button" className="br" disabled={sibuk} onClick={() => void aksi(() => unduh(m))}>
                   Unduh PDF
                 </button>
               </div>
