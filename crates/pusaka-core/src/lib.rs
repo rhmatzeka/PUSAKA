@@ -2,6 +2,7 @@
 //! Keacakan (kunci, nonce) selalu disuplai pemanggil supaya semua fungsi deterministik.
 
 pub mod amplop;
+pub mod eip712;
 pub mod hash;
 pub mod heks;
 
