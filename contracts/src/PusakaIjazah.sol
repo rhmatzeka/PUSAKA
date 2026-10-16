@@ -67,6 +67,7 @@ contract PusakaIjazah is ERC721URIStorage, AccessControl, EIP712, IERC5192 {
     error TidakDapatDipindahtangankan();
     error PanjangTidakSama();
     error BatchTerlaluBesar(uint256 jumlah);
+    error PemisahanTugasDilanggar(address wallet);
 
     constructor(address admin) ERC721("PUSAKA Ijazah UNPAM", "PUSAKA") EIP712("PUSAKA", "2") {
         _grantRole(DEFAULT_ADMIN_ROLE, admin);
@@ -198,12 +199,15 @@ contract PusakaIjazah is ERC721URIStorage, AccessControl, EIP712, IERC5192 {
         emit Locked(tokenId);
     }
 
-    /// Pulihkan penanda tangan; tolak bila tanda tangan rusak atau penanda tangan tak berperan.
+    /// Pulihkan penanda tangan; tolak bila tanda tangan rusak, penanda tangan tak berperan,
+    /// atau penanda tangan sama dengan pengirim transaksi.
     function _wajibPenandaTangan(bytes32 digest, bytes calldata sig) private view returns (address) {
         (address penandaTangan, ECDSA.RecoverError galat,) = ECDSA.tryRecover(digest, sig);
         if (galat != ECDSA.RecoverError.NoError || !hasRole(PENANDATANGAN_ROLE, penandaTangan)) {
             revert PenandaTanganTidakBerwenang(penandaTangan);
         }
+        // Pemisahan tugas: pengirim transaksi (operator) tidak boleh menyetujui dirinya sendiri.
+        if (penandaTangan == msg.sender) revert PemisahanTugasDilanggar(msg.sender);
         return penandaTangan;
     }
 

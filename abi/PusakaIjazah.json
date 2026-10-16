@@ -1365,6 +1365,17 @@
   },
   {
     "type": "error",
+    "name": "PemisahanTugasDilanggar",
+    "inputs": [
+      {
+        "name": "wallet",
+        "type": "address",
+        "internalType": "address"
+      }
+    ]
+  },
+  {
+    "type": "error",
     "name": "PenandaTanganTidakBerwenang",
     "inputs": [
       {
