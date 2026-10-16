@@ -3,6 +3,7 @@
 
 pub mod config;
 pub mod galat;
+pub mod kunci;
 pub mod masukan;
 
 use axum::http::StatusCode;
