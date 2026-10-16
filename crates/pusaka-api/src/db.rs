@@ -383,3 +383,151 @@ pub async fn tandai_terbit<'e>(
     .fetch_optional(e)
     .await?)
 }
+
+pub async fn draf_dari_token(db: &PgPool, token_id: i64) -> Result<Option<BarisDraf>, Galat> {
+    Ok(
+        sqlx::query_as(concat!(pilih_draf!(), "where d.token_id = $1"))
+            .bind(token_id)
+            .fetch_optional(db)
+            .await?,
+    )
+}
+
+// ------------------------------------------------------------------ pencabutan
+
+pub const STATUS_CABUT: [&str; 3] = ["MENUNGGU_TTD", "DITANDATANGANI", "SELESAI"];
+
+macro_rules! pilih_cabut {
+    () => {
+        "select c.id, c.token_id, c.alasan, c.status, c.dibuat_oleh, c.dibuat, d.nama, d.nim, \
+         d.nomor_ijazah, t.penanda_tangan as ttd_penanda_tangan, t.sig as ttd_sig, \
+         t.batas_waktu as ttd_batas_waktu from permintaan_cabut c \
+         join draf d on d.token_id = c.token_id left join lateral ( \
+         select penanda_tangan, sig, batas_waktu from tanda_tangan \
+         where jenis = 'pencabutan' and rujukan_id = c.id and batas_waktu > now() \
+         order by dibuat desc limit 1) t on c.status = 'DITANDATANGANI' "
+    };
+}
+
+#[derive(Debug, sqlx::FromRow)]
+pub struct BarisCabut {
+    pub id: Uuid,
+    pub token_id: i64,
+    pub alasan: String,
+    pub status: String,
+    pub dibuat_oleh: String,
+    pub dibuat: DateTime<Utc>,
+    pub nama: String,
+    pub nim: String,
+    pub nomor_ijazah: String,
+    pub ttd_penanda_tangan: Option<String>,
+    pub ttd_sig: Option<Vec<u8>>,
+    pub ttd_batas_waktu: Option<DateTime<Utc>>,
+}
+
+impl BarisCabut {
+    pub fn ke_json(&self) -> Value {
+        json!({
+            "id": self.id,
+            "token_id": self.token_id,
+            "alasan": self.alasan,
+            "alasan_hash": ke_hex(&keccak256(self.alasan.as_bytes())),
+            "status": self.status,
+            "dibuat_oleh": self.dibuat_oleh,
+            "dibuat": self.dibuat,
+            "nama": self.nama,
+            "nim": self.nim,
+            "nomor_ijazah": self.nomor_ijazah,
+            "ttd": json_ttd(&self.ttd_penanda_tangan, &self.ttd_sig, &self.ttd_batas_waktu),
+        })
+    }
+}
+
+pub async fn sisip_cabut<'e>(
+    e: impl PgExecutor<'e>,
+    id: Uuid,
+    token_id: i64,
+    alasan: &str,
+    oleh: &str,
+) -> Result<(), Galat> {
+    sqlx::query(
+        "insert into permintaan_cabut (id, token_id, alasan, status, dibuat_oleh) \
+         values ($1, $2, $3, 'MENUNGGU_TTD', $4)",
+    )
+    .bind(id)
+    .bind(token_id)
+    .bind(alasan)
+    .bind(oleh)
+    .execute(e)
+    .await
+    .map_err(|e| {
+        petakan_unik(e, || {
+            "sudah ada permintaan cabut yang belum selesai untuk token ini".into()
+        })
+    })?;
+    Ok(())
+}
+
+pub async fn ambil_cabut(db: &PgPool, id: Uuid) -> Result<Option<BarisCabut>, Galat> {
+    Ok(sqlx::query_as(concat!(pilih_cabut!(), "where c.id = $1"))
+        .bind(id)
+        .fetch_optional(db)
+        .await?)
+}
+
+pub async fn daftar_cabut(db: &PgPool, status: Option<&str>) -> Result<Vec<BarisCabut>, Galat> {
+    Ok(sqlx::query_as(concat!(
+        pilih_cabut!(),
+        "where ($1::text is null or c.status = $1) order by c.dibuat desc limit 100"
+    ))
+    .bind(status)
+    .fetch_all(db)
+    .await?)
+}
+
+pub async fn status_cabut(db: &PgPool, id: Uuid) -> Result<Option<String>, Galat> {
+    Ok(
+        sqlx::query_scalar("select status from permintaan_cabut where id = $1")
+            .bind(id)
+            .fetch_optional(db)
+            .await?,
+    )
+}
+
+pub async fn tandai_cabut_ditandatangani<'e>(
+    e: impl PgExecutor<'e>,
+    id: Uuid,
+) -> Result<bool, Galat> {
+    let r = sqlx::query(
+        "update permintaan_cabut set status = 'DITANDATANGANI', diubah = now() \
+         where id = $1 and status = 'MENUNGGU_TTD'",
+    )
+    .bind(id)
+    .execute(e)
+    .await?;
+    Ok(r.rows_affected() == 1)
+}
+
+/// Permintaan → SELESAI dan draf → DICABUT. Kontrak sumber kebenaran: permintaan yang
+/// tanda tangannya kedaluwarsa (kembali MENUNGGU_TTD) tetap bisa diselesaikan.
+pub async fn selesaikan_cabut(
+    tx: &mut sqlx::PgConnection,
+    id: Uuid,
+    token_id: i64,
+) -> Result<bool, Galat> {
+    let r = sqlx::query(
+        "update permintaan_cabut set status = 'SELESAI', diubah = now() \
+         where id = $1 and status <> 'SELESAI'",
+    )
+    .bind(id)
+    .execute(&mut *tx)
+    .await?;
+    if r.rows_affected() != 1 {
+        return Ok(false);
+    }
+    sqlx::query("update draf set status = 'DICABUT', diubah = now() where token_id = $1")
+        .bind(token_id)
+        .execute(&mut *tx)
+        .await?;
+    Ok(true)
+}
