@@ -13,10 +13,14 @@ pub fn ke_hex(b: &[u8]) -> String {
 }
 
 fn tetap<const N: usize>(s: &str) -> Result<[u8; N], GalatHeks> {
-    let s = s.strip_prefix("0x").or_else(|| s.strip_prefix("0X")).unwrap_or(s);
+    let s = s
+        .strip_prefix("0x")
+        .or_else(|| s.strip_prefix("0X"))
+        .unwrap_or(s);
     let byte = hex::decode(s).map_err(|_| GalatHeks::BukanHex)?;
     let dapat = byte.len();
-    byte.try_into().map_err(|_| GalatHeks::PanjangSalah { harus: N, dapat })
+    byte.try_into()
+        .map_err(|_| GalatHeks::PanjangSalah { harus: N, dapat })
 }
 
 pub fn dari_hex32(s: &str) -> Result<[u8; 32], GalatHeks> {
