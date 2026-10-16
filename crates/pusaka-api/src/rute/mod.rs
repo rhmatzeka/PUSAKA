@@ -3,6 +3,7 @@
 pub mod draf;
 pub mod ipfs;
 pub mod sesi;
+pub mod ttd;
 
 use axum::Router;
 use axum::routing::{get, post};
@@ -15,6 +16,7 @@ pub fn semua() -> Router<Negara> {
         .route("/api/ipfs", post(ipfs::unggah))
         .route("/api/draf", post(draf::buat).get(draf::daftar))
         .route("/api/draf/{id}", get(draf::detail))
+        .route("/api/draf/{id}/setujui", post(draf::setujui))
         .route("/api/draf/{id}/tolak", post(draf::tolak))
         .route("/api/draf/{id}/kirim-ulang", post(draf::kirim_ulang))
 }

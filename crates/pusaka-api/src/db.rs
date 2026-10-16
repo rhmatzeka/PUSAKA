@@ -306,3 +306,63 @@ pub async fn perbaiki_draf<'e>(
     })?;
     Ok(r.rows_affected() == 1)
 }
+
+// ------------------------------------------------------------------ tanda tangan
+
+pub async fn sisip_ttd<'e>(
+    e: impl PgExecutor<'e>,
+    jenis: &str,
+    rujukan: Uuid,
+    penanda_tangan: &[u8; 20],
+    sig: &[u8],
+    batas: DateTime<Utc>,
+) -> Result<(), Galat> {
+    sqlx::query(
+        "insert into tanda_tangan (id, jenis, rujukan_id, penanda_tangan, sig, batas_waktu) \
+         values ($1, $2, $3, $4, $5, $6)",
+    )
+    .bind(Uuid::new_v4())
+    .bind(jenis)
+    .bind(rujukan)
+    .bind(ke_hex(penanda_tangan))
+    .bind(sig)
+    .bind(batas)
+    .execute(e)
+    .await?;
+    Ok(())
+}
+
+/// `true` bila draf MENUNGGU_TTD berpindah ke DITANDATANGANI.
+pub async fn tandai_draf_ditandatangani<'e>(
+    e: impl PgExecutor<'e>,
+    id: Uuid,
+) -> Result<bool, Galat> {
+    let r = sqlx::query(
+        "update draf set status = 'DITANDATANGANI', diubah = now() \
+         where id = $1 and status = 'MENUNGGU_TTD'",
+    )
+    .bind(id)
+    .execute(e)
+    .await?;
+    Ok(r.rows_affected() == 1)
+}
+
+/// Kembalikan draf/permintaan cabut DITANDATANGANI yang tanda tangannya sudah lewat
+/// batas waktu ke MENUNGGU_TTD.
+pub async fn kedaluwarsakan(db: &PgPool) -> Result<(), Galat> {
+    sqlx::query(
+        "update draf d set status = 'MENUNGGU_TTD', diubah = now() \
+         where d.status = 'DITANDATANGANI' and not exists (select 1 from tanda_tangan t \
+         where t.jenis = 'penerbitan' and t.rujukan_id = d.id and t.batas_waktu > now())",
+    )
+    .execute(db)
+    .await?;
+    sqlx::query(
+        "update permintaan_cabut c set status = 'MENUNGGU_TTD', diubah = now() \
+         where c.status = 'DITANDATANGANI' and not exists (select 1 from tanda_tangan t \
+         where t.jenis = 'pencabutan' and t.rujukan_id = c.id and t.batas_waktu > now())",
+    )
+    .execute(db)
+    .await?;
+    Ok(())
+}

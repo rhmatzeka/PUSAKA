@@ -3,7 +3,9 @@ use std::collections::HashMap;
 use axum::Json;
 use axum::extract::{Path, State};
 use axum::http::StatusCode;
-use pusaka_core::heks::ke_hex;
+use pusaka_core::eip712::{self, Penerbitan};
+use pusaka_core::hash::keccak256;
+use pusaka_core::heks::{self, ke_hex};
 use serde::Deserialize;
 use serde_json::{Value, json};
 use uuid::Uuid;
@@ -14,6 +16,7 @@ use crate::galat::Galat;
 use crate::kunci;
 use crate::masukan::{JsonMasuk, QueryMasuk, id_dari};
 use crate::negara::Negara;
+use crate::rute::ttd::{self as ttd_rute, Persetujuan};
 use crate::validasi::{self, DrafBaru, DrafSah};
 
 pub const MAKS_BATCH: usize = 50;
@@ -110,6 +113,7 @@ pub async fn daftar(
     QueryMasuk(q): QueryMasuk<KueriDaftar>,
 ) -> Result<Json<Value>, Galat> {
     p.wajib_operator_atau_penandatangan()?;
+    db::kedaluwarsakan(&n.db).await?;
     if let Some(s) = &q.status
         && !db::STATUS_DRAF.contains(&s.as_str())
     {
@@ -139,6 +143,7 @@ pub async fn detail(
     Path(id): Path<String>,
 ) -> Result<Json<Value>, Galat> {
     p.wajib_operator_atau_penandatangan()?;
+    db::kedaluwarsakan(&n.db).await?;
     let id = id_dari(&id)?;
     let d = db::ambil_draf(&n.db, id)
         .await?
@@ -215,5 +220,55 @@ pub async fn kirim_ulang(
     tx.commit().await?;
     Ok(Json(
         json!({ "id": id, "status": "MENUNGGU_TTD", "penerima": ke_hex(&penerima) }),
+    ))
+}
+
+/// `POST /api/draf/{id}/setujui`: tanda tangan EIP-712 `Penerbitan` dari pejabat.
+pub async fn setujui(
+    State(n): State<Negara>,
+    p: Pengguna,
+    Path(id): Path<String>,
+    JsonMasuk(b): JsonMasuk<Persetujuan>,
+) -> Result<Json<Value>, Galat> {
+    p.wajib_penandatangan()?;
+    let id = id_dari(&id)?;
+    let batas = ttd_rute::cek_batas_waktu(b.batas_waktu, ttd_rute::sekarang())?;
+    db::cek_batas(&n.db, &p.did).await?;
+    let d = db::ambil_draf(&n.db, id)
+        .await?
+        .ok_or_else(|| Galat::TidakDitemukan("draf tidak ditemukan".into()))?;
+    if d.status != "MENUNGGU_TTD" {
+        return Err(Galat::StatusTidakSesuai(format!(
+            "draf berstatus {}, harus MENUNGGU_TTD",
+            d.status
+        )));
+    }
+    let penerbitan = Penerbitan {
+        penerima: heks::alamat(&d.penerima)
+            .map_err(|_| Galat::Internal("penerima tersimpan rusak".into()))?,
+        doc_hash: d.doc_hash32()?,
+        metadata_hash: keccak256(d.uri.as_bytes()),
+        batas_waktu: b.batas_waktu,
+    };
+    let digest = eip712::digest_penerbitan(&n.domain, &penerbitan);
+    let pt = ttd_rute::pulihkan(&n, &p, &digest, &b.sig).await?;
+
+    let mut tx = n.db.begin().await?;
+    db::sisip_ttd(&mut *tx, "penerbitan", id, &pt.alamat, &pt.sig, batas).await?;
+    if !db::tandai_draf_ditandatangani(&mut *tx, id).await? {
+        drop(tx);
+        return Err(galat_status(&n, id, "MENUNGGU_TTD").await);
+    }
+    db::audit(
+        &mut *tx,
+        &p.did,
+        "draf.setujui",
+        &id.to_string(),
+        json!({ "penanda_tangan": ke_hex(&pt.alamat) }),
+    )
+    .await?;
+    tx.commit().await?;
+    Ok(Json(
+        json!({ "id": id, "status": "DITANDATANGANI", "penanda_tangan": ke_hex(&pt.alamat) }),
     ))
 }
