@@ -9,8 +9,8 @@ export interface Penanda {
   alamat: Address;
   /** Tanda tangan EIP-712 domain PUSAKA. */
   tandaTangani(d: DataTtd): Promise<Hex>;
-  /** Kirim transaksi ke kontrak lalu tunggu sampai tercatat di blok. */
-  kirim(tx: { to: Address; data: Hex }): Promise<Hex>;
+  /** Kirim transaksi ke kontrak lalu tunggu sampai tercatat di blok. `saatTerkirim` dipanggil begitu hash ada. */
+  kirim(tx: { to: Address; data: Hex }, saatTerkirim?: (hash: Hex) => void): Promise<Hex>;
 }
 
 export interface Sesi {
@@ -48,10 +48,13 @@ export function buatPenanda(j: Jaringan, akun: Account | Address, provider?: Pro
       d.primaryType === 'Penerbitan'
         ? klien.signTypedData({ domain: domainPusaka(j), types: TIPE_EIP712, primaryType: 'Penerbitan', message: d.message })
         : klien.signTypedData({ domain: domainPusaka(j), types: TIPE_EIP712, primaryType: 'Pencabutan', message: d.message }),
-    async kirim(tx) {
+    async kirim(tx, saatTerkirim) {
       const hash = await klien.sendTransaction({ to: tx.to, data: tx.data });
+      saatTerkirim?.(hash);
       const r = await publik.waitForTransactionReceipt({ hash });
-      if (r.status !== 'success') throw new Error('Transaksi ditolak kontrak (revert). Periksa tanda tangan dan batas waktunya.');
+      if (r.status !== 'success') {
+        throw new Error('Transaksi ditolak kontrak (revert): periksa peran wallet, tanda tangan, dan batas waktunya.');
+      }
       return hash;
     },
   };

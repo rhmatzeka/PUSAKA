@@ -11,3 +11,8 @@ export function tujuanPeran(p: Peran): '/op' | '/meja' | '/alumni' {
 export function tujuanAman(ke: string | null): string | null {
   return ke && /^\/(op|meja|alumni)(\/[a-z-]*)?$/.test(ke) ? ke : null;
 }
+
+/** `alamat` termasuk wallet yang tertaut ke akun (huruf besar/kecil tidak dibedakan). */
+export function alamatTertaut(alamat: string | undefined, tertaut: string[]): boolean {
+  return !!alamat && tertaut.some((t) => t.toLowerCase() === alamat.toLowerCase());
+}

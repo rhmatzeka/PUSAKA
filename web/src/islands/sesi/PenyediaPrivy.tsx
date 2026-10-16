@@ -1,12 +1,13 @@
 import { PrivyProvider, usePrivy, useWallets } from '@privy-io/react-auth';
 import { useMemo, type ReactNode } from 'react';
 import { dompetDiingat, lupakanDompet, temukanDompet } from '../../lib/eip6963';
+import { alamatTertaut } from '../../lib/peran';
 import type { Jaringan } from '../../lib/konfigurasi';
 import { buatPenanda, rantaiViem, type Sesi } from '../../lib/sesi';
 import { KonteksSesi } from './konteks';
 
 function Jembatan({ j, children }: { j: Jaringan; children: ReactNode }) {
-  const { ready, authenticated, getAccessToken, logout } = usePrivy();
+  const { ready, authenticated, getAccessToken, logout, user } = usePrivy();
   const { wallets } = useWallets();
   const sesi = useMemo<Sesi>(
     () => ({
@@ -23,7 +24,10 @@ function Jembatan({ j, children }: { j: Jaringan; children: ReactNode }) {
           const d = (await temukanDompet()).find((x) => x.rdns === rdns);
           if (d) {
             const [alamat] = (await d.provider.request({ method: 'eth_requestAccounts' })) as `0x${string}`[];
-            if (alamat) {
+            // Pakai wallet luar hanya bila alamat aktifnya memang tertaut ke akun Privy yang sedang login.
+            const tertaut = (user?.linkedAccounts ?? []).flatMap((a) => ('address' in a && a.type === 'wallet' ? [a.address] : []));
+            if (!alamatTertaut(alamat, tertaut)) lupakanDompet();
+            else if (alamat) {
               await d.provider
                 .request({ method: 'wallet_switchEthereumChain', params: [{ chainId: `0x${j.chainId.toString(16)}` }] })
                 .catch(() => undefined);
@@ -41,7 +45,7 @@ function Jembatan({ j, children }: { j: Jaringan; children: ReactNode }) {
         await logout();
       },
     }),
-    [ready, authenticated, getAccessToken, logout, wallets, j],
+    [ready, authenticated, getAccessToken, logout, user, wallets, j],
   );
   return <KonteksSesi.Provider value={sesi}>{children}</KonteksSesi.Provider>;
 }
