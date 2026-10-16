@@ -9,7 +9,6 @@ import '../styles/beranda.css';
 import { BABAK } from '../beranda/babak';
 
 const latar = Object.fromEntries(BABAK.map((b) => [b.nama, b.latar]));
-const segel = (nada = 'diam') => ({ nada });
 ---
 
 <!doctype html>
@@ -39,7 +38,7 @@ const segel = (nada = 'diam') => ({ nada });
             <p class="sudut-kiri-bawah lead">Dijaga blockchain.<br />Diperiksa siapa saja, tanpa akun.</p>
             <div class="hud sudut-kanan-bawah">Gulir<b>↓ 6 babak</b></div>
           </div>
-          <div class="segel segel-statis" data-nada={segel().nada} aria-hidden="true">
+          <div class="segel segel-statis" aria-hidden="true">
             <span class="segel-orbit segel-orbit-a"></span><span class="segel-orbit segel-orbit-b"></span><div class="segel-keping"></div>
           </div>
         </div>

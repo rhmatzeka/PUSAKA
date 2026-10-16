@@ -20,7 +20,7 @@ html[data-terang="1"] body.beranda {
   pointer-events: none;
 }
 
-html.statis #kanvas-beranda {
+html:not(.hidup) #kanvas-beranda {
   display: none;
 }
 
@@ -76,37 +76,22 @@ html.hidup .layar {
   pointer-events: none;
 }
 
-html.hidup .isi a,
-html.hidup .isi button {
-  pointer-events: auto;
-}
 
-html.hidup .babak .isi {
-  visibility: hidden;
-}
-
-html.hidup[data-babak="pembuka"] [data-untuk="pembuka"] .isi,
-html.hidup[data-babak="cetak-biru"] [data-untuk="cetak-biru"] .isi,
-html.hidup[data-babak="ponsel"] [data-untuk="ponsel"] .isi,
-html.hidup[data-babak="pemalsuan"] [data-untuk="pemalsuan"] .isi,
-html.hidup[data-babak="inti"] [data-untuk="inti"] .isi,
-html.hidup[data-babak="penutup"] [data-untuk="penutup"] .isi {
-  visibility: visible;
-}
-
+/* Babak tidak aktif hanya disembunyikan secara visual: teksnya tetap terbaca pembaca layar;
+   tautannya diberi tabindex=-1 oleh mulai.ts. */
 html.hidup .babak .isi {
   opacity: 0;
-  transform: translateY(14px);
+  pointer-events: none;
 }
 
-html.hidup[data-babak="pembuka"] [data-untuk="pembuka"] .isi,
-html.hidup[data-babak="cetak-biru"] [data-untuk="cetak-biru"] .isi,
-html.hidup[data-babak="ponsel"] [data-untuk="ponsel"] .isi,
-html.hidup[data-babak="pemalsuan"] [data-untuk="pemalsuan"] .isi,
-html.hidup[data-babak="inti"] [data-untuk="inti"] .isi,
-html.hidup[data-babak="penutup"] [data-untuk="penutup"] .isi {
+html.hidup .babak.aktif .isi {
   opacity: 1;
   transform: none;
+}
+
+html.hidup .babak.aktif .isi a,
+html.hidup .babak.aktif .isi button {
+  pointer-events: auto;
 }
 
 .judul-beranda {
@@ -119,6 +104,10 @@ html.hidup[data-babak="penutup"] [data-untuk="penutup"] .isi {
 
 .aksen {
   color: #5b8cff;
+}
+
+.terang .aksen {
+  color: #2f5fd0;
 }
 
 .merah {
@@ -297,44 +286,69 @@ html[data-terang="1"] .hud,
   justify-content: center;
 }
 
-.terang .br,
-html[data-terang="1"] .isi .br {
+/* Lebih spesifik dari `.br[data-utama]` (putih) di gaya global. */
+.babak.terang .br,
+html[data-terang="1"] .babak .isi .br {
   color: #0d1424;
 }
 
-/* Versi statis (reduced motion / tanpa WebGL): latar per babak, segel CSS, gulir biasa. */
+/* Versi statis (bawaan sebelum/ tanpa JS, reduced motion, tanpa WebGL): latar per babak, alur biasa. */
 .segel-statis {
   display: none !important;
 }
 
-html.statis .babak {
+html:not(.hidup) .babak {
   height: auto;
   min-height: 100dvh;
   background: var(--latar-statis);
 }
 
-html.statis .terang {
+html:not(.hidup) .terang {
   color: #0d1424;
 }
 
-html.statis .layar {
+html:not(.hidup) .layar {
   position: relative;
   height: auto;
   min-height: 100dvh;
+  overflow: visible;
 }
 
-html.statis .segel-statis {
+html:not(.hidup) .isi {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  min-height: 100dvh;
+  padding: 104px clamp(16px, 4vw, 48px) 56px;
+}
+
+html:not(.hidup) .isi > *,
+html:not(.hidup) .layar-palsu {
+  position: relative;
+  inset: auto;
+  max-width: 100%;
+  transform: none;
+}
+
+html:not(.hidup) .sudut-kanan-atas,
+html:not(.hidup) .sudut-kanan-bawah {
+  align-self: flex-end;
+}
+
+html:not(.hidup) .ponsel {
+  align-self: center;
+}
+
+html:not(.hidup) .segel-statis {
   display: grid !important;
   position: absolute;
   top: 50%;
   left: 50%;
+  z-index: 0;
   width: min(60vw, 320px);
   transform: translate(-50%, -50%);
-  opacity: 0.55;
-}
-
-html.statis .ponsel {
-  transform: none;
+  opacity: 0.4;
 }
 
 @media (max-width: 767px) {
@@ -363,8 +377,8 @@ html.statis .ponsel {
     transform: translate(-50%, calc((1 - var(--naik, 1)) * 55vh));
   }
 
-  html.statis .ponsel {
-    transform: translateX(-50%);
+  html:not(.hidup) .ponsel {
+    width: min(240px, 70vw);
   }
 
   .lapis-bukti,

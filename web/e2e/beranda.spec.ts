@@ -47,3 +47,29 @@ test('tanpa geser horizontal di 375 px', async ({ page }) => {
     expect(lebih, `p=${p}`).toBeLessThanOrEqual(0);
   }
 });
+
+test('teks babak yang tidak aktif tetap terbaca pembaca layar', async ({ page }) => {
+  await page.goto('/');
+  await expect(page.locator('html.hidup')).toBeAttached();
+  await expect(page.getByRole('heading', { name: 'Langsung ketahuan.' })).toHaveCount(1);
+  // tetapi tautannya tidak bisa difokus selama babaknya tidak aktif
+  await expect(page.locator('[data-untuk="penutup"]').getByRole('link', { name: 'Masuk' })).toHaveAttribute('tabindex', '-1');
+});
+
+test('chunk 3D gagal dimuat → versi statis', async ({ page }) => {
+  await page.route(/\/_astro\/adegan\.[^/]+\.js$/, (r) => r.abort());
+  await page.goto('/');
+  await expect(page.locator('html.statis')).toBeAttached();
+  await expect(page.getByRole('heading', { name: 'Asli atau palsu?' })).toBeVisible();
+});
+
+test.describe('tanpa JavaScript', () => {
+  test.use({ javaScriptEnabled: false });
+  test('semua babak terbaca dengan latarnya sendiri', async ({ page }) => {
+    await page.goto('/');
+    await expect(page.locator('#kanvas-beranda')).toBeHidden();
+    const penutup = page.locator('[data-untuk="penutup"]');
+    await expect(penutup).toHaveCSS('background-color', 'rgb(247, 248, 251)');
+    await expect(penutup.getByRole('link', { name: 'Periksa ijazah' })).toHaveCSS('color', 'rgb(13, 20, 36)');
+  });
+});

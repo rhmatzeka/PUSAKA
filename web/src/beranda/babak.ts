@@ -59,3 +59,12 @@ export const halus = (t: number) => {
   const x = jepit(t);
   return x * x * (3 - 2 * x);
 };
+
+/** Latar cukup terang untuk teks gelap (luminans relatif sRGB). */
+export function latarTerang(hex: string): boolean {
+  const [r, g, b] = keRgb(hex).map((v) => {
+    const c = v / 255;
+    return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+  }) as [number, number, number];
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b > 0.3;
+}

@@ -36,7 +36,8 @@ const acak = (() => {
 
 export function buatAdegan(kanvas: HTMLCanvasElement): Adegan {
   const renderer = new THREE.WebGLRenderer({ canvas: kanvas, antialias: true, alpha: true, powerPreference: 'high-performance' });
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  // Transmisi kaca menambah satu lintasan render; di layar kecil DPR dibatasi lebih rendah.
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, window.innerWidth < 768 ? 1.5 : 2));
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.outputColorSpace = THREE.SRGBColorSpace;
 
@@ -230,13 +231,11 @@ export function buatAdegan(kanvas: HTMLCanvasElement): Adegan {
     kristal.position.set(segel.position.x * (1 - buka), 0, 0);
     kristal.scale.set(0.8 * buka * (1 - tutup * 0.7), 1.35 * buka * (1 - tutup * 0.7), 0.8 * buka * (1 - tutup * 0.7));
     kristal.rotation.y = p * 6;
+    kristal.visible = buka > 0.01;
     bahanKristal.emissiveIntensity = 0.4 + nyala * 2.6;
     cahayaInti.intensity = nyala * 30;
     const sebar = halus((l[4] - 0.35) / 0.4) * (1 - tutup);
-    for (const s of simpul) {
-      (s.material as THREE.MeshPhysicalMaterial).opacity = halus((l[4] - 0.2) / 0.3) * (1 - tutup);
-      s.rotation.y = p * 4;
-    }
+    for (const s of simpul) s.rotation.y = p * 4;
     for (const b of berkas) {
       const panjang = (b.userData['panjang'] as number) * sebar;
       const arah = b.userData['arah'] as THREE.Vector3;

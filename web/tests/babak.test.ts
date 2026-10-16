@@ -33,3 +33,14 @@ describe('babak beranda', () => {
     expect(campur('#000000', '#ffffff', 0.5)).toBe('#808080');
   });
 });
+
+describe('warna teks mengikuti terang latar campuran', () => {
+  test('latar terang → teks gelap, juga di tengah peralihan', async () => {
+    const { latarTerang } = await import('../src/beranda/babak');
+    expect(latarTerang('#03060c')).toBe(false);
+    expect(latarTerang('#eef1f6')).toBe(true);
+    expect(latarTerang('#2a0509')).toBe(false);
+    expect(latarTerang('#808080')).toBe(false);
+    expect(latarTerang('#a0a0a0')).toBe(true);
+  });
+});
