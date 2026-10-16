@@ -31,6 +31,6 @@ Tanpa `.env.local` lengkap, API tetap jalan dan setiap `/api/*` menjawab 503
 eval "$(scripts/db-uji.sh)"                # Postgres sementara (Docker) untuk tes API
 cargo test --workspace
 npm --prefix web test                      # unit verifikasi (Vitest)
-npm --prefix web run e2e                   # Anvil + kontrak + Chrome sistem (Playwright)
+npm --prefix web run e2e                   # Anvil + kontrak + API Rust + Postgres Docker + Chrome sistem
 npm --prefix web run check
 ```

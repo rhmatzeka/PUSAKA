@@ -218,7 +218,7 @@ Astro 5 (output statis), React 19 islands, TypeScript strict, Tailwind v4 dengan
 | `/op` | Buku Induk (jendela perintah) | operator |
 | `/op/unggah` | Draf tunggal atau CSV + kumpulan PDF, progres per baris | operator |
 | `/op/cabut` | Permintaan pencabutan | operator |
-| `/op/peran` | Lihat dan kelola peran (admin) | admin |
+| `/op/peran` | Lihat dan kelola peran (admin); ditunda ke rencana 09, sementara lewat `cast`/explorer | admin |
 | `/meja` | Meja tanda tangan pejabat | pejabat |
 | `/alumni` | Ijazah milik alumni, tautan berkunci, QR, unduh PDF | alumni |
 

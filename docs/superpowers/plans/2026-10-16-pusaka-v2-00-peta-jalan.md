@@ -11,7 +11,7 @@ Spec v2 mencakup beberapa subsistem yang masing-masing bisa diuji sendiri. Karen
 | 03 | Crate `pusaka-core` (native + WASM) | 3 | Keccak, amplop AES-GCM, EIP-712, CSV teruji; paket WASM terbangun | ✅ `2026-10-16-pusaka-v2-03-core.md` |
 | 04 | Crate `pusaka-api` + Postgres + Privy + Pinata | 4 | Tes integrasi alur draf → setujui → terbit → cabut | ✅ `2026-10-16-pusaka-v2-04-api.md` |
 | 05 | Web: `/periksa` dan `/i/[tokenId]` | 5 | Tiga jalur verifikasi terhadap Anvil (Playwright) | ✅ `2026-10-16-pusaka-v2-05-periksa.md` |
-| 06 | Web: masuk Privy, `/op`, `/op/unggah`, `/meja`, pencabutan | 6 | E2E alur terbit dan cabut | — |
+| 06 | Web: masuk Privy, `/op`, `/op/unggah`, `/meja`, pencabutan | 6 | E2E alur terbit dan cabut | ✅ `2026-10-16-pusaka-v2-06-op.md` |
 | 07 | Web: `/alumni` | 7 | Alumni baru melihat ijazahnya | — |
 | 08 | Web: beranda 3D | 8 | Enam babak + fallback statis | — |
 | 09 | Deploy Amoy + Vercel + domain | 9 | URL produksi; GitHub menampilkan Rust terbesar | — |
