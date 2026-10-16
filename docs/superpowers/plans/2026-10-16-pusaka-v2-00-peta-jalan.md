@@ -14,7 +14,7 @@ Spec v2 mencakup beberapa subsistem yang masing-masing bisa diuji sendiri. Karen
 | 06 | Web: masuk Privy, `/op`, `/op/unggah`, `/meja`, pencabutan | 6 | E2E alur terbit dan cabut | ✅ `2026-10-16-pusaka-v2-06-op.md` |
 | 07 | Web: `/alumni` | 7 | Alumni baru melihat ijazahnya | ✅ `2026-10-16-pusaka-v2-07-alumni.md` |
 | 08 | Web: beranda 3D | 8 | Enam babak + fallback statis | ✅ `2026-10-16-pusaka-v2-08-beranda.md` |
-| 09 | Deploy Amoy + Vercel + domain | 9 | URL produksi; GitHub menampilkan Rust terbesar | — |
+| 09 | Deploy Amoy + Vercel + domain | 9 | URL produksi; GitHub menampilkan Rust terbesar | ✍ `2026-10-16-pusaka-v2-09-deploy.md` (skrip siap; menunggu akun) |
 | 10 | Penyesuaian proposal BAB III | 10 | Proposal sesuai v2, ≤ 20 halaman isi | — |
 
 Urutan wajib: 01 → 02 → 03 → 04 → 05 → 06 → 07 → 08 → 09 → 10. Rencana 02 dan 03 boleh dikerjakan paralel setelah 01.
