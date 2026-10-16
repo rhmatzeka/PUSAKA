@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { Component, useEffect, useMemo, useState, type ReactNode } from 'react';
 import BarisBukti, { type Bukti } from '../components/BarisBukti';
 import Segel, { type NadaSegel } from '../components/Segel';
 import { angka, ringkas, tanggal } from '../lib/format';
@@ -95,11 +95,12 @@ function Isi({ hasil }: { hasil: HasilToken }) {
         <>
           <h1 className="judul">Ijazah #{id}</h1>
           <BarisBukti
-            bukti={[{ ikon: '⚿', nama: 'Kunci berkas', ket: '✕ Tidak cocok', nada: 'bad' }, ...buktiRantai(hasil.ijazah)]}
+            bukti={[{ ikon: '⚿', nama: 'Berkas ijazah', ket: '✕ Tidak terbuka', nada: 'bad' }, ...buktiRantai(hasil.ijazah)]}
           />
           <p className="catatan">
-            Kunci di tautan ini tidak bisa membuka berkas ijazah. Minta tautan atau QR baru dari pemilik ijazah. Status di
-            blockchain di atas tetap berlaku.
+            Berkas tidak bisa dibuka: kunci di tautan salah, atau berkas di IPFS rusak atau ditukar. Jangan percayai
+            salinan berkas ini sampai tautannya diperiksa ulang ke pemilik ijazah atau BAAK. Status di blockchain di atas
+            tetap berlaku.
           </p>
         </>
       );
@@ -147,6 +148,24 @@ function Isi({ hasil }: { hasil: HasilToken }) {
         </>
       );
     }
+  }
+}
+
+/** Galat saat menggambar hasil tidak boleh menjadi layar kosong. */
+class PenjagaGalat extends Component<{ children: ReactNode }, { galat: boolean }> {
+  override state = { galat: false };
+
+  static getDerivedStateFromError() {
+    return { galat: true };
+  }
+
+  override render() {
+    if (!this.state.galat) return this.props.children;
+    return (
+      <p className="catatan" data-nada="bad">
+        Data ijazah ini tidak bisa ditampilkan. Muat ulang halaman, atau periksa lewat unggah PDF di halaman Periksa.
+      </p>
+    );
   }
 }
 
@@ -225,7 +244,11 @@ export default function Hasil() {
             </div>
           )}
         </div>
-        {k.tahap === 'hasil' && <Isi hasil={k.hasil} />}
+        {k.tahap === 'hasil' && (
+          <PenjagaGalat>
+            <Isi hasil={k.hasil} />
+          </PenjagaGalat>
+        )}
         {k.tahap === 'galat' && <p className="catatan">{k.pesan}</p>}
       </section>
     </div>

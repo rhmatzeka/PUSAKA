@@ -1,7 +1,7 @@
 //! Tiga jalur verifikasi (spec 9). Murni: semua I/O lewat `Sumber`.
 
 import type { Hex } from 'viem';
-import type { HasilBerkas, HasilToken, Ijazah, Sumber } from './jenis';
+import type { DataLulusan, HasilBerkas, HasilToken, Ijazah, Sumber } from './jenis';
 
 const STATUS_TIDAK_ADA = 0;
 const STATUS_DICABUT = 2;
@@ -22,6 +22,18 @@ export async function cekBerkas(pdf: Uint8Array, s: Sumber): Promise<HasilBerkas
     docHash,
     ijazah: r.data,
   };
+}
+
+const KOLOM_DATA = ['nama', 'nim', 'prodi', 'gelar', 'nomor_ijazah', 'tanggal_lulus'] as const;
+
+/** Header amplop hanya dipakai bila keenam kolomnya teks dan tanggalnya sah. */
+export function sahkanData(x: unknown): DataLulusan | null {
+  if (typeof x !== 'object' || x === null) return null;
+  const o = x as Record<string, unknown>;
+  if (!KOLOM_DATA.every((k) => typeof o[k] === 'string' && o[k] !== '')) return null;
+  const t = o['tanggal_lulus'] as string;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(t) || Number.isNaN(Date.parse(`${t}T00:00:00Z`))) return null;
+  return o as unknown as DataLulusan;
 }
 
 function alamatBerkas(metadata: unknown): string {
@@ -47,9 +59,11 @@ export async function cekToken(tokenId: bigint, kunci: Uint8Array | null, s: Sum
   } catch {
     return { jenis: 'kunci-salah', tokenId, ijazah };
   }
+  const data = sahkanData(isi.data);
+  if (!data) return { jenis: 'kunci-salah', tokenId, ijazah };
   const hashBerkas: Hex = s.keccak(isi.pdf);
   if (hashBerkas.toLowerCase() !== ijazah.docHash.toLowerCase()) {
     return { jenis: 'berkas-tidak-cocok', tokenId, ijazah, hashBerkas };
   }
-  return { jenis: 'lengkap', tokenId, ijazah, data: isi.data, pdf: isi.pdf };
+  return { jenis: 'lengkap', tokenId, ijazah, data, pdf: isi.pdf };
 }

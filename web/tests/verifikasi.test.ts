@@ -117,3 +117,20 @@ test('statusIjazah dari waktuCabut', () => {
   expect(statusIjazah(ijazah('0x01'))).toBe('VALID');
   expect(statusIjazah(ijazah('0x01', 5))).toBe('DICABUT');
 });
+
+describe('isi amplop yang cacat', () => {
+  test('amplop sampah dari gateway → tidak terbuka', async () => {
+    const s = tiruan({ ambil: async (uri) => (uri === 'ipfs://meta' ? new TextEncoder().encode(JSON.stringify({ pusaka: { berkas: 'ipfs://amplop' } })) : new Uint8Array(64).fill(3)) });
+    expect(await cekToken(1n, KUNCI, s)).toMatchObject({ jenis: 'kunci-salah' });
+  });
+
+  test.each([
+    ['tanpa nomor_ijazah', { ...DATA, nomor_ijazah: undefined }],
+    ['nama bukan teks', { ...DATA, nama: { x: 1 } }],
+    ['tanggal tidak sah', { ...DATA, tanggal_lulus: '2026-13-45' }],
+  ])('header %s → tidak ditampilkan', async (_n, data) => {
+    // pusaka-core menolak header bertipe salah; lapisan ini tetap dijaga untuk Sumber lain.
+    const s = tiruan({ buka: () => ({ data, pdf: PDF }) });
+    expect(await cekToken(1n, KUNCI, s)).toMatchObject({ jenis: 'kunci-salah' });
+  });
+});

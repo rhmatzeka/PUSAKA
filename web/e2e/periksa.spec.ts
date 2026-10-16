@@ -58,7 +58,8 @@ test.describe('halaman /i/[tokenId]', () => {
 
   test('kunci salah → tidak bisa membuka berkas', async ({ page }) => {
     await page.goto(`/i/1#k=${'A'.repeat(43)}`);
-    await expect(page.getByText('✕ Tidak cocok')).toBeVisible();
+    await expect(page.getByText('✕ Tidak terbuka')).toBeVisible();
+    await expect(page.getByText(/berkas di IPFS rusak atau ditukar/)).toBeVisible();
     await expect(page.getByTestId('nama')).toHaveCount(0);
   });
 

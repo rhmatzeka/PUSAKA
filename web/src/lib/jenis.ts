@@ -26,8 +26,8 @@ export interface Sumber {
   tokenUri(tokenId: bigint): Promise<string>;
   ambil(uri: string): Promise<Uint8Array>;
   keccak(isi: Uint8Array): Hex;
-  /** Melempar galat bila kunci salah atau amplop rusak. */
-  buka(kunci: Uint8Array, amplop: Uint8Array): { data: DataLulusan; pdf: Uint8Array };
+  /** Melempar galat bila kunci salah atau amplop rusak. `data` divalidasi pemanggil. */
+  buka(kunci: Uint8Array, amplop: Uint8Array): { data: unknown; pdf: Uint8Array };
 }
 
 export type HasilBerkas =

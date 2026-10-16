@@ -3,12 +3,13 @@
 import { BaseError, ContractFunctionRevertedError, createPublicClient, http, type Address, type Hex } from 'viem';
 import { abiPusaka } from './abi';
 import { muatCore } from './core';
-import { keUrlGateway } from './ipfs';
+import { ambilTerbatas, keUrlGateway } from './ipfs';
 import type { Ijazah, Sumber } from './jenis';
 import type { Jaringan } from './konfigurasi';
 
 /** Amplop maksimal 4 MiB (batas API); metadata jauh lebih kecil. */
 export const MAKS_UNDUH = 8 * 1024 * 1024;
+export const BATAS_UNDUH_MS = 15_000;
 
 interface IjazahMentah {
   docHash: Hex;
@@ -52,13 +53,7 @@ export async function buatSumber(j: Jaringan): Promise<SumberRantai> {
       }
     },
     tokenUri: (tokenId) => klien.readContract({ ...kontrak, functionName: 'tokenURI', args: [tokenId] }),
-    async ambil(uri) {
-      const r = await fetch(keUrlGateway(uri, j.gateway));
-      if (!r.ok) throw new Error(`Gateway IPFS menjawab ${r.status}`);
-      const isi = new Uint8Array(await r.arrayBuffer());
-      if (isi.length > MAKS_UNDUH) throw new Error('Berkas di IPFS lebih besar dari batas ijazah');
-      return isi;
-    },
+    ambil: (uri) => ambilTerbatas(keUrlGateway(uri, j.gateway), { batasMs: BATAS_UNDUH_MS, maks: MAKS_UNDUH }),
     keccak: (isi) => core.keccak256_hex(isi) as Hex,
     buka(kunci, amplop) {
       const h = core.buka_amplop(kunci, amplop);

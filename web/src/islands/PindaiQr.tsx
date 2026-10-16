@@ -27,7 +27,11 @@ export default function PindaiQr({ tutup }: { tutup: () => void }) {
       try {
         aliran = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
         const v = video.current;
-        if (!v || !jalan) return;
+        // Panel bisa sudah ditutup saat izin kamera masih ditunggu: matikan aliran yang baru dibuka.
+        if (!v || !jalan) {
+          aliran.getTracks().forEach((t) => t.stop());
+          return;
+        }
         v.srcObject = aliran;
         await v.play();
         while (jalan) {
