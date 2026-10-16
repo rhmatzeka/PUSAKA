@@ -10,7 +10,8 @@ test.describe.configure({ mode: 'serial' });
 async function masukSebagai(page: Page, label: 'Operator BAAK' | 'Rektor' | 'Alumni', ke: '/op' | '/meja' | '/alumni') {
   await page.goto(`/masuk/?ke=${ke}`);
   await page.getByRole('button', { name: `Masuk sebagai ${label}` }).click();
-  await expect(page).toHaveURL(new RegExp(`${ke}/?$`));
+  // Cocokkan pathname, bukan seluruh URL: `/masuk/?ke=/op` juga berakhiran `/op`.
+  await expect(page).toHaveURL((u) => u.pathname.replace(/\/$/, '') === ke);
   await expect(page.locator('[data-siap]')).toBeAttached();
 }
 
