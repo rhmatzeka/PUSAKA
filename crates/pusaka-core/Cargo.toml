@@ -17,6 +17,7 @@ tiny-keccak = { version = "2", features = ["keccak"] }
 aes-gcm = { version = "0.10", default-features = false, features = ["aes", "alloc"] }
 csv = "1"
 hex = "0.4"
+k256 = { version = "0.13", default-features = false, features = ["ecdsa"] }
 serde = { workspace = true }
 serde_json = { workspace = true }
 thiserror = { workspace = true }
