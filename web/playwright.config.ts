@@ -6,6 +6,8 @@ const ENV = [
   'PUBLIC_ALAMAT_KONTRAK=0x5FbDB2315678afecb367f032d93F642f64180aa3',
   'PUBLIC_CHAIN_ID=31337',
   `PUBLIC_GATEWAY_URL=http://127.0.0.1:${PORT}`,
+  'PUBLIC_MODE_UJI=1',
+  'PUBLIC_PRIVY_APP_ID=app-uji',
 ].join(' ');
 
 export default defineConfig({
