@@ -6,5 +6,6 @@ export const abiPusaka = parseAbi([
   'function periksa(bytes32 docHash) view returns (uint8 status, uint256 tokenId, Ijazah data)',
   'function ijazah(uint256 tokenId) view returns (Ijazah)',
   'function tokenURI(uint256 tokenId) view returns (string)',
+  'function totalTerbit() view returns (uint256)',
   'error IjazahTidakAda(uint256 tokenId)',
 ]);
