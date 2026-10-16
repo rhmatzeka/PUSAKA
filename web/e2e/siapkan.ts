@@ -1,7 +1,7 @@
 //! Global setup E2E: Anvil + deploy PusakaIjazah + terbitkan dua ijazah (satu lalu dicabut),
 //! amplop & metadata ditaruh di "IPFS" lokal (e2e/.data/ipfs) yang dilayani server.mjs.
 
-import { execFileSync, spawn } from 'node:child_process';
+import { execFileSync, spawn, type ChildProcess } from 'node:child_process';
 import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { createPublicClient, createWalletClient, http, keccak256, toBytes, type Abi, type Hex } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
@@ -20,6 +20,14 @@ const REKTOR = '0x5de4111afa1a4b94908f83103eb1f1706367c2e68ca870fc3fb9a804cdab36
 const ALUMNI = ['0x90F79bf6EB2c4f870365E785982E1f101E93b906', '0x15d34AAf54267DB7D7c367839AAf71A00a2C6A65'] as const;
 
 const DATA = new URL('./.data/', import.meta.url).pathname;
+const AKAR = new URL('../../', import.meta.url).pathname;
+export const PORT_API = 8799;
+export const PORT_TIRUAN = 4330;
+/** Pasangan publik `KUNCI_JWT_UJI` (src/lib/akun-uji.ts): API memverifikasi token uji dengannya. */
+const KUNCI_JWT_PUBLIK_UJI = `-----BEGIN PUBLIC KEY-----
+MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE5c+RvaCEr34ae/Z8uxav61WemvEb
+T5eAwS2Edc/oyMuskbxmTPk0PPVgJBMrYSQSOVlzLcSrZvORnvni2EN1FQ==
+-----END PUBLIC KEY-----`;
 const KONTRAK_DIR = new URL('../../contracts/', import.meta.url).pathname;
 const ABI = JSON.parse(readFileSync(new URL('../../abi/PusakaIjazah.json', import.meta.url), 'utf8')) as Abi;
 
@@ -60,16 +68,66 @@ export default async function siapkan(): Promise<() => Promise<void>> {
   initSync({ module: readFileSync(new URL('../src/wasm/pusaka_core_bg.wasm', import.meta.url)) });
 
   mkdirSync(`${KONTRAK_DIR}deployments`, { recursive: true });
-  const anvil = spawn('anvil', ['--silent', '--port', String(PORT_RPC)], { stdio: 'ignore' });
+  const proses: ChildProcess[] = [spawn('anvil', ['--silent', '--port', String(PORT_RPC)], { stdio: 'ignore' })];
+  const matikan = async () => {
+    for (const p of proses) p.kill();
+  };
   try {
     await isi();
+    proses.push(...(await nyalakanApi()));
   } catch (e) {
-    anvil.kill();
+    await matikan();
     throw e;
   }
-  return async () => {
-    anvil.kill();
-  };
+  return matikan;
+}
+
+async function tunggu(url: string, nama: string, batasMs = 60_000): Promise<void> {
+  const akhir = Date.now() + batasMs;
+  while (Date.now() < akhir) {
+    try {
+      if ((await fetch(url)).status < 500) return;
+    } catch {
+      // belum siap
+    }
+    await new Promise((r) => setTimeout(r, 200));
+  }
+  throw new Error(`${nama} tidak menyala`);
+}
+
+/** Tiruan Privy/Pinata, Postgres bersih (Docker), lalu pusaka-api asli yang memverifikasi token uji. */
+async function nyalakanApi(): Promise<ChildProcess[]> {
+  const tiruan = spawn('node', ['e2e/tiruan.mjs'], { stdio: 'ignore', env: { ...process.env, PORT: String(PORT_TIRUAN) } });
+  const keluaranDb = execFileSync('bash', [`${AKAR}scripts/db-uji.sh`], { encoding: 'utf8' });
+  const dasarDb = /DATABASE_URL=(\S+)/.exec(keluaranDb)?.[1]?.replace(/\/postgres$/, '');
+  if (!dasarDb) throw new Error('scripts/db-uji.sh tidak mencetak DATABASE_URL');
+  execFileSync('docker', ['exec', 'pusaka-pg-uji', 'psql', '-q', '-U', 'postgres', '-c', 'drop database if exists pusaka_e2e', '-c', 'create database pusaka_e2e']);
+  const db = `${dasarDb}/pusaka_e2e`;
+  execFileSync('cargo', ['build', '-q', '-p', 'pusaka-api'], { cwd: AKAR, stdio: 'inherit' });
+  const biner = `${AKAR}target/debug/pusaka-api`;
+  execFileSync(biner, ['migrasi'], { cwd: AKAR, stdio: 'ignore', env: { ...process.env, DATABASE_URL_LANGSUNG: db } });
+  const api = spawn(biner, [], {
+    cwd: AKAR,
+    stdio: 'ignore',
+    env: {
+      ...process.env,
+      PUSAKA_API_ALAMAT: `127.0.0.1:${PORT_API}`,
+      DATABASE_URL: db,
+      PRIVY_APP_ID: 'app-uji',
+      PRIVY_APP_SECRET: 'rahasia-uji',
+      PRIVY_VERIFICATION_KEY: KUNCI_JWT_PUBLIK_UJI,
+      PRIVY_API_URL: `http://127.0.0.1:${PORT_TIRUAN}`,
+      PINATA_JWT: 'jwt-uji',
+      PINATA_UPLOAD_URL: `http://127.0.0.1:${PORT_TIRUAN}`,
+      KUNCI_MASTER: '11'.repeat(32),
+      RPC_URL: RPC,
+      ALAMAT_KONTRAK: KONTRAK,
+      CHAIN_ID: '31337',
+    },
+  });
+  await tunggu(`http://127.0.0.1:${PORT_TIRUAN}/`, 'Tiruan Privy/Pinata');
+  await tunggu(`http://127.0.0.1:${PORT_API}/api/kesehatan`, 'pusaka-api');
+  return [tiruan, api];
 }
 
 /** Deploy kontrak dan terbitkan data uji ke Anvil yang baru dinyalakan. */

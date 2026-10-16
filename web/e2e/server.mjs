@@ -1,11 +1,12 @@
 // Server statis E2E: meniru rewrite dan header vercel.json, plus "IPFS" lokal di /ipfs/<cid>.
 import { readFile } from 'node:fs/promises';
-import { createServer } from 'node:http';
+import { createServer, request } from 'node:http';
 import { extname, join, normalize } from 'node:path';
 
 const DIST = new URL('../dist/', import.meta.url).pathname;
 const IPFS = new URL('./.data/ipfs/', import.meta.url).pathname;
 const PORT = Number(process.env.PORT ?? 4329);
+const API = Number(process.env.PORT_API ?? 8799);
 const JENIS = {
   '.html': 'text/html; charset=utf-8',
   '.js': 'text/javascript',
@@ -17,8 +18,22 @@ const JENIS = {
 };
 
 createServer(async (req, res) => {
-  let jalur = decodeURIComponent(new URL(req.url ?? '/', 'http://lokal').pathname);
+  // /api/* diteruskan ke pusaka-api lokal, seperti rewrite vercel.json ke fungsi Rust.
+  if (req.url?.startsWith('/api/')) {
+    const maju = request({ host: '127.0.0.1', port: API, path: req.url, method: req.method, headers: req.headers }, (r) => {
+      res.writeHead(r.statusCode ?? 502, r.headers);
+      r.pipe(res);
+    });
+    maju.on('error', () => {
+      res.writeHead(502, { 'content-type': 'application/json' });
+      res.end('{"kode":"LAYANAN_LUAR","pesan":"pusaka-api lokal tidak menyala"}');
+    });
+    req.pipe(maju);
+    return;
+  }
+  let jalur = '/';
   try {
+    jalur = decodeURIComponent(new URL(req.url ?? '/', 'http://lokal').pathname);
     if (jalur.startsWith('/ipfs/')) {
       const isi = await readFile(join(IPFS, jalur.slice(6).replace(/[^A-Za-z0-9]/g, '')));
       res.writeHead(200, { 'content-type': 'application/octet-stream' });
