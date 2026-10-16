@@ -1,7 +1,7 @@
 import { decodeFunctionData } from 'viem';
 import { expect, test } from 'vitest';
 import type { Draf, PermintaanCabut } from '../src/lib/api';
-import { abiTulis, dataCabut, dataTerbitkan } from '../src/lib/transaksi';
+import { abiTulis, dataCabut, dataTerbitkan, pilihSiapDicatat } from '../src/lib/transaksi';
 
 const draf = (i: number, ttd = true): Draf => ({
   id: `id-${i}`,
@@ -60,4 +60,18 @@ test('cabut memuat alasan dan tanda tangan pejabat', () => {
   expect(functionName).toBe('cabut');
   expect(args?.[2]).toBe('salah nama ibu');
   expect(() => dataCabut({ ...c, ttd: null })).toThrow(/belum ditandatangani/);
+});
+
+test('draf yang tanda tangannya kedaluwarsa (atau hampir) tidak ikut batch', () => {
+  const kini = 1793000000 - 3600; // 1 jam sebelum batas draf biasa
+  const lama = { ...draf(3), ttd: { ...draf(3).ttd!, batas_waktu: kini - 10 } };
+  const { siap, kedaluwarsa } = pilihSiapDicatat([draf(1), lama, draf(2, false)], kini);
+  expect(siap.map((d) => d.id)).toEqual(['id-1']);
+  expect(kedaluwarsa.map((d) => d.id)).toEqual(['id-3']);
+  expect(pilihSiapDicatat([draf(1)], 1793000000 - 30).siap).toEqual([]);
+});
+
+test('cabut dengan tanda tangan kedaluwarsa ditolak sebelum transaksi', () => {
+  const c = { id: 'c', token_id: 1, alasan: 'x', alasan_hash: '0x00' as const, status: 'DITANDATANGANI' as const, dibuat_oleh: '', dibuat: '', nama: '', nim: '', nomor_ijazah: '', ttd: { penanda_tangan: '0x00' as const, sig: '0x00' as const, batas_waktu: 100 } };
+  expect(() => dataCabut(c, 200)).toThrow(/kedaluwarsa/);
 });

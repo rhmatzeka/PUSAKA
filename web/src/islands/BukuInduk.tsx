@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Jendela, { type Aksi, type Item } from '../components/Jendela';
 import Kerangka, { DOK_OPERATOR } from '../components/Kerangka';
 import LembarQr from '../components/LembarQr';
@@ -7,7 +7,8 @@ import { GalatApi, type Draf, type StatusDraf } from '../lib/api';
 import { CHIP_STATUS, labelHari, nadaSegelDraf, tampilanDraf } from '../lib/buku-induk';
 import { angka, ringkas, tanggal } from '../lib/format';
 import { tautanBerkunci } from '../lib/tautan';
-import { dataTerbitkan, MAKS_BATCH } from '../lib/transaksi';
+import { ambilTertunda, hapusTertunda, simpanTertunda, ulangiLaporan } from '../lib/laporan';
+import { dataTerbitkan, MAKS_BATCH, pilihSiapDicatat } from '../lib/transaksi';
 import PenyediaSesi from './sesi/PenyediaSesi';
 import Penjaga, { useAplikasi } from './sesi/Penjaga';
 
@@ -34,6 +35,8 @@ function Isi() {
   const [cabut, setCabut] = useState(false);
   const [alasan, setAlasan] = useState('');
   const [qr, setQr] = useState<{ tautan: string; nama: string; nomor: string } | null>(null);
+  const [konfirmasi, setKonfirmasi] = useState(false);
+  const jalan = useRef(false);
 
   const muat = useCallback(async () => {
     const kueri = { ...(chip === 'semua' ? {} : { status: chip }), cari };
@@ -58,10 +61,27 @@ function Isi() {
   useEffect(() => {
     setCabut(false);
     setAlasan('');
-  }, [terpilih]);
+    setKonfirmasi(false);
+  }, [terpilih, chip]);
+
+  // Transaksi yang sudah tercatat di blockchain tetapi belum sempat dilaporkan ke server.
+  useEffect(() => {
+    const t = ambilTertunda(sessionStorage);
+    if (t?.jenis !== 'terbit') return;
+    void ulangiLaporan(() => api.terbit(t.hash))
+      .then((r) => {
+        hapusTertunda(sessionStorage);
+        setKabar({ teks: `Transaksi tertunda dilaporkan: ${r.terbit.length} ijazah tercatat`, nada: 'ok' });
+        return muat();
+      })
+      .catch((e: unknown) => setKabar({ teks: `Transaksi ${t.hash.slice(0, 10)}… belum bisa dilaporkan: ${pesan(e)}`, nada: 'bad' }));
+  }, [api, muat]);
 
   async function jalankan(label: string, kerja: () => Promise<string>) {
+    if (jalan.current) return;
+    jalan.current = true;
     setSibuk(true);
+    setKonfirmasi(false);
     setKabar({ teks: `${label}…` });
     try {
       setKabar({ teks: await kerja(), nada: 'ok' });
@@ -69,6 +89,7 @@ function Isi() {
     } catch (e) {
       setKabar({ teks: pesan(e), nada: 'bad' });
     } finally {
+      jalan.current = false;
       setSibuk(false);
     }
   }
@@ -81,12 +102,23 @@ function Isi() {
         siap.push(...h.data.filter((x) => x.ttd));
         if (h.data.length < h.per_halaman) break;
       }
-      if (siap.length === 0) throw new Error('Belum ada draf yang ditandatangani Rektor.');
-      const batch = siap.slice(0, MAKS_BATCH);
+      const { siap: berlaku, kedaluwarsa } = pilihSiapDicatat(siap);
+      if (berlaku.length === 0) {
+        throw new Error(
+          kedaluwarsa.length
+            ? `${kedaluwarsa.length} tanda tangan sudah (hampir) kedaluwarsa. Minta Rektor menandatangani ulang.`
+            : 'Belum ada draf yang ditandatangani Rektor.',
+        );
+      }
+      const batch = berlaku.slice(0, MAKS_BATCH);
       const penanda = await sesi.penanda();
-      const hash = await penanda.kirim({ to: j.kontrak, data: dataTerbitkan(batch) });
-      const r = await api.terbit(hash);
-      return `${r.terbit.length} ijazah tercatat di blockchain`;
+      const hash = await penanda.kirim({ to: j.kontrak, data: dataTerbitkan(batch) }, (h) =>
+        simpanTertunda(sessionStorage, { jenis: 'terbit', hash: h }),
+      );
+      const r = await ulangiLaporan(() => api.terbit(hash));
+      hapusTertunda(sessionStorage);
+      const lewat = kedaluwarsa.length ? ` (${kedaluwarsa.length} dilewati karena tanda tangan kedaluwarsa)` : '';
+      return `${r.terbit.length} ijazah tercatat di blockchain${lewat}`;
     });
 
   async function tautanUntuk(x: Draf): Promise<string> {
@@ -95,10 +127,14 @@ function Isi() {
     return tautanBerkunci(location.origin, x.token_id, kunci);
   }
 
-  const aksiUtama: Aksi | null = !d
+  const nSiap = Math.min(hitung.siap, MAKS_BATCH);
+  const minta: Aksi = { id: 'catat', label: `Catat ${nSiap} ijazah ke blockchain`, jalankan: () => setKonfirmasi(true) };
+  const aksiUtama: Aksi | null = konfirmasi
+    ? { id: 'ya', label: `Ya, catat ${nSiap} ijazah sekarang`, jalankan: () => void catat() }
+    : !d
     ? null
     : d.status === 'DITANDATANGANI'
-      ? { id: 'catat', label: `Catat ${Math.min(hitung.siap, MAKS_BATCH)} ijazah ke blockchain`, jalankan: () => void catat() }
+      ? minta
       : d.status === 'TERBIT' || d.status === 'DICABUT'
         ? {
             id: 'buka',
@@ -130,7 +166,7 @@ function Isi() {
     );
   }
   if (hitung.siap > 0 && d?.status !== 'DITANDATANGANI') {
-    aksi.push({ id: 'catat', label: `Catat ${Math.min(hitung.siap, MAKS_BATCH)} ijazah ke blockchain`, jalankan: () => void catat() });
+    aksi.push(minta);
   }
   aksi.push({ id: 'unggah', label: 'Unggah draf baru', jalankan: () => location.assign('/op/unggah') });
 

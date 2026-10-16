@@ -2,7 +2,7 @@ import { useLoginWithEmail, useLoginWithOAuth, useLoginWithSiwe, usePrivy } from
 import { useEffect, useState, type FormEvent } from 'react';
 import { AKUN_UJI, masukUji, type PeranUji } from '../lib/akun-uji';
 import { buatApi } from '../lib/api';
-import { ingatDompet, temukanDompet, type DompetPeramban } from '../lib/eip6963';
+import { ingatDompet, lupakanDompet, temukanDompet, type DompetPeramban } from '../lib/eip6963';
 import { jaringan } from '../lib/konfigurasi';
 import { tujuanAman, tujuanPeran } from '../lib/peran';
 import type { Sesi } from '../lib/sesi';
@@ -70,9 +70,11 @@ function PanelPrivy() {
       if (!alamat) throw new Error('Wallet tidak memberikan alamat.');
       const pesan = await generateSiweMessage({ address: alamat, chainId: `eip155:${j.chainId}` });
       const signature = (await d.provider.request({ method: 'personal_sign', params: [pesan, alamat] })) as string;
-      await loginWithSiwe({ message: pesan, signature });
+      // Diingat sebelum login selesai: pengalihan halaman berjalan begitu Privy menandai sesi masuk.
       ingatDompet(d.rdns);
+      await loginWithSiwe({ message: pesan, signature });
     } catch (e) {
+      lupakanDompet();
       setGalat(pesanGalat(e));
     }
   }

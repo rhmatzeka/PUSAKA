@@ -127,7 +127,7 @@ function Isi() {
   useEffect(() => {
     const tekan = (e: KeyboardEvent) => {
       if (tab !== 'terbit' || sibuk || tolak || e.target instanceof HTMLTextAreaElement || e.target instanceof HTMLInputElement) return;
-      if (e.key === 'Enter' && !(e.target instanceof HTMLButtonElement)) {
+      if (e.key === 'Enter' && !(e.target instanceof HTMLButtonElement) && !(e.target instanceof HTMLAnchorElement)) {
         e.preventDefault();
         void tandatanganiKini();
       }

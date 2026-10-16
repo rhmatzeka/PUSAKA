@@ -104,7 +104,13 @@ export default function Jendela({
       e.preventDefault();
       onPilih(item[Math.max(i - 1, 0)]?.id ?? item[0]!.id);
     }
-    if (e.key === 'Enter' && aksiUtama && !(e.target instanceof HTMLButtonElement)) {
+    // Enter di kotak cari, tombol, atau tautan tidak boleh menjalankan aksi utama (bisa berupa transaksi).
+    const diKendali =
+      e.target instanceof HTMLInputElement ||
+      e.target instanceof HTMLSelectElement ||
+      e.target instanceof HTMLButtonElement ||
+      e.target instanceof HTMLAnchorElement;
+    if (e.key === 'Enter' && aksiUtama && !diKendali) {
       e.preventDefault();
       aksiUtama.jalankan();
     }

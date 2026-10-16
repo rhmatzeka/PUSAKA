@@ -82,11 +82,23 @@ test('operator memperbaiki draf yang ditolak, Rektor menandatanganinya', async (
   await expect(rektor.getByTestId('meja-bersih')).toBeVisible();
 });
 
+test('Enter di kotak cari tidak mengirim transaksi', async ({ page }) => {
+  await masukSebagai(page, 'Operator BAAK', '/op');
+  await page.getByRole('button', { name: 'Siap', exact: true }).click();
+  await expect(page.getByRole('option')).toHaveCount(2);
+  await page.getByRole('textbox', { name: /Cari nama/ }).press('Enter');
+  await expect(kabar(page)).toHaveText(/Buku Induk/);
+  await page.getByRole('button', { name: 'Siap', exact: true }).click();
+  await expect(page.getByRole('option')).toHaveCount(2);
+});
+
 test('operator mencatat dua ijazah ke blockchain dalam satu transaksi', async ({ page }) => {
   await masukSebagai(page, 'Operator BAAK', '/op');
   await page.getByRole('button', { name: 'Siap', exact: true }).click();
   await expect(page.getByRole('option')).toHaveCount(2);
   await page.getByRole('button', { name: /Catat 2 ijazah ke blockchain/ }).click();
+  // Aksi on-chain tidak bisa dibatalkan: wajib dikonfirmasi sekali lagi.
+  await page.getByRole('button', { name: /Ya, catat 2 ijazah sekarang/ }).click();
   await expect(kabar(page)).toHaveText('2 ijazah tercatat di blockchain');
   await page.getByRole('button', { name: 'Tercatat', exact: true }).click();
   await expect(page.getByRole('option')).toHaveCount(2);
@@ -126,6 +138,7 @@ test('pencabutan: operator meminta, Rektor menandatangani, operator mengirim ke 
 
   await page.getByRole('link', { name: 'Pencabutan' }).click();
   await page.getByRole('button', { name: 'Kirim pencabutan ke blockchain' }).click();
+  await page.getByRole('button', { name: /Ya, cabut #\d+ sekarang/ }).click();
   await expect(kabar(page)).toHaveText(/Ijazah #\d+ dicabut/);
   await page.goto(tautanSiti);
   await expect(page.getByTestId('status')).toHaveText('↓ Dicabut');
