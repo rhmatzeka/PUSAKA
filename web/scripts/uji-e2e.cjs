@@ -40,7 +40,9 @@ async function halaman(browser, akun) {
   return p;
 }
 
-const tunggu = (p, teks, ms = 30000) => p.waitForFunction((t) => document.body.innerText.includes(t), { timeout: ms }, teks);
+const tunggu = (p, teks, ms = 30000) =>
+  p.waitForFunction((t) => document.body.innerText.toLowerCase().includes(t.toLowerCase()), { timeout: ms }, teks);
+const memuat = async (p, teks) => (await p.evaluate(() => document.body.innerText)).toLowerCase().includes(teks.toLowerCase());
 const klik = async (p, teks) => {
   const el = await p.waitForSelector(`button::-p-text(${teks}), a::-p-text(${teks}), label::-p-text(${teks})`);
   await el.click();
@@ -81,7 +83,7 @@ const klik = async (p, teks) => {
   p = await halaman(browser, admin);
   await p.goto(`${WEB}/admin`, { waitUntil: "networkidle0" });
   await klik(p, "Masuk dengan MetaMask");
-  await tunggu(p, "Total diterbitkan");
+  await tunggu(p, "Diterbitkan");
   cek("KF-01 login admin ber-ISSUER_ROLE", true);
   await klik(p, "Terbitkan");
   await p.waitForSelector("#pdf");
@@ -99,7 +101,7 @@ const klik = async (p, teks) => {
   await klik(p, "Tanda tangani & Terbitkan");
   await tunggu(p, "Berhasil diterbitkan");
   const txt1 = await p.evaluate(() => document.body.innerText);
-  cek("KF-02 terbit tunggal", /Token:\s*#1/.test(txt1), txt1.match(/Berhasil.*detik/)?.[0]);
+  cek("KF-02 terbit tunggal", /token:\s*#1/i.test(txt1), txt1.match(/Berhasil.*detik/i)?.[0]);
   await shot(p, "2-terbit-berhasil");
 
   // KF-02: PDF yang sama diterbitkan lagi
@@ -111,9 +113,8 @@ const klik = async (p, teks) => {
   // KF-03: batch CSV
   await p.goto(`${WEB}/admin`, { waitUntil: "networkidle0" });
   await klik(p, "Masuk dengan MetaMask");
-  await tunggu(p, "Total diterbitkan");
+  await tunggu(p, "Diterbitkan");
   await klik(p, "Terbitkan");
-  await p.waitForSelector("input[type=radio]");
   await klik(p, "Batch CSV");
   await p.waitForSelector("#csv");
   await (await p.$("#csv")).uploadFile(path.join(DIR, "lulusan.csv"));
@@ -128,7 +129,7 @@ const klik = async (p, teks) => {
   cek("KF-03 batch 2 ijazah dalam 1 transaksi", /#2\s*#3/.test(txt2));
 
   // KF-04 + KF-05: daftar & cabut
-  await klik(p, "Daftar ijazah");
+  await klik(p, "Register");
   await tunggu(p, "#3");
   await shot(p, "3-daftar");
   await p.waitForFunction(() => document.querySelectorAll("tbody button").length === 3);
@@ -136,7 +137,7 @@ const klik = async (p, teks) => {
   await tombol[1].click(); // token #2
   await tunggu(p, "Ijazah #2 berhasil dicabut");
   cek("KF-04 cabut ijazah #2", true);
-  cek("KF-05 daftar menampilkan status", (await p.evaluate(() => document.body.innerText)).includes("DICABUT (Salah data)"));
+  cek("KF-05 daftar menampilkan status", await memuat(p, "DICABUT (Salah data)"));
   await shot(p, "4-dicabut");
   await p.close();
 
@@ -147,7 +148,7 @@ const klik = async (p, teks) => {
   let t0 = Date.now();
   await (await p.$("input[type=file]")).uploadFile(pdf.A);
   await tunggu(p, "sama persis");
-  cek("KF-09 PDF asli -> VALID", (await p.evaluate(() => document.body.innerText)).includes("VALID"), `${Date.now() - t0} ms`);
+  cek("KF-09 PDF asli -> VALID", await memuat(p, "valid"), `${Date.now() - t0} ms`);
   await shot(p, "5-valid");
   await p.goto(`${WEB}/verify`, { waitUntil: "networkidle0" });
   await (await p.$("input[type=file]")).uploadFile(pdf.A_ubah);
@@ -158,7 +159,7 @@ const klik = async (p, teks) => {
   // KF-08: token ID
   await p.goto(`${WEB}/verify/2`, { waitUntil: "networkidle0" });
   await tunggu(p, "DICABUT");
-  cek("KF-08 token #2 -> DICABUT + alasan", (await p.evaluate(() => document.body.innerText)).includes("Alasan pencabutan: Salah data"));
+  cek("KF-08 token #2 -> DICABUT + alasan", await memuat(p, "Alasan pencabutan: Salah data"));
   await shot(p, "7-dicabut");
   await p.goto(`${WEB}/verify/99`, { waitUntil: "networkidle0" });
   await tunggu(p, "tidak ditemukan");

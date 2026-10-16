@@ -14,25 +14,25 @@ export default function Dasbor() {
   const total = data?.length ?? 0;
   const dicabut = data?.filter((x) => x.dicabut).length ?? 0;
   const angka = [
-    ["Total diterbitkan", total],
+    ["Diterbitkan", total],
     ["Aktif", total - dicabut],
     ["Dicabut", dicabut],
   ] as const;
 
   return (
-    <div className="space-y-6">
-      <h1 className="text-2xl font-bold">Dasbor</h1>
-      <div className="grid gap-4 sm:grid-cols-3">
+    <div>
+      <h1 className="display-s">register</h1>
+      <div className="cells mt-8 md:grid-cols-3">
         {angka.map(([label, nilai]) => (
-          <div key={label} className="kartu">
-            <p className="text-sm text-slate-500">{label}</p>
-            <p className="text-3xl font-bold">{data ? nilai : "…"}</p>
+          <div key={label} className="cell">
+            <p className="label">{label}</p>
+            <p className="display-s mt-2 tabular-nums">{data ? nilai : "—"}</p>
           </div>
         ))}
       </div>
-      <div className="flex gap-3">
-        <Link href="/admin/issue" className="tombol">Terbitkan ijazah</Link>
-        <Link href="/admin/certificates" className="tombol-garis">Lihat daftar</Link>
+      <div className="mt-10 flex flex-wrap items-center gap-x-8 gap-y-4">
+        <Link href="/admin/issue" className="act">Terbitkan ijazah</Link>
+        <Link href="/admin/certificates" className="act-text">Lihat register</Link>
       </div>
     </div>
   );

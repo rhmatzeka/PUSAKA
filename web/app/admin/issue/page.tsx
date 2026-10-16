@@ -14,12 +14,25 @@ export default function Terbitkan() {
   const [mode, setMode] = useState<"tunggal" | "batch">("tunggal");
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold">Terbitkan Ijazah</h1>
-      <div className="flex gap-4 text-sm">
+      <header>
+        <h1 className="display-s">terbitkan</h1>
+        <p className="prose mt-3">Satu per satu, atau sekaligus lewat berkas CSV (maksimal {MAKS_BATCH} per transaksi).</p>
+      </header>
+      <div className="flex gap-x-8 border-b-2 border-[var(--color-ink)]">
         {(["tunggal", "batch"] as const).map((m) => (
-          <label key={m} className="flex items-center gap-2">
-            <input type="radio" checked={mode === m} onChange={() => setMode(m)} /> {m === "tunggal" ? "Tunggal" : "Batch CSV"}
-          </label>
+          <button
+            key={m}
+            type="button"
+            aria-pressed={mode === m}
+            onClick={() => setMode(m)}
+            className="label py-3 transition-colors duration-150"
+            style={{
+              color: mode === m ? "var(--color-ink)" : undefined,
+              borderBottom: `2px solid ${mode === m ? "var(--color-signal)" : "transparent"}`,
+            }}
+          >
+            {m === "tunggal" ? "Tunggal" : "Batch CSV"}
+          </button>
         ))}
       </div>
       {mode === "tunggal" ? <FormTunggal /> : <FormBatch />}
@@ -29,12 +42,12 @@ export default function Terbitkan() {
 
 function Hasil({ ids, detik }: { ids: number[]; detik: string }) {
   return (
-    <div className="rounded-xl border border-emerald-300 bg-emerald-50 p-4 text-sm text-emerald-900">
-      <p className="font-semibold">✔ Berhasil diterbitkan dalam {detik} detik.</p>
+    <div className="border-2 border-[var(--color-state-valid)] p-4 text-[var(--text-sm)] text-[var(--color-state-valid)]">
+      <p className="font-semibold">■ Berhasil diterbitkan dalam {detik} detik.</p>
       <p className="mt-1 flex flex-wrap gap-x-3">
         Token:{" "}
         {ids.map((id) => (
-          <Link key={id} href={`/verify/${id}`} className="underline">#{id}</Link>
+          <Link key={id} href={`/verify/${id}`} className="font-semibold underline underline-offset-2">#{id}</Link>
         ))}
       </p>
     </div>
@@ -94,16 +107,16 @@ function FormTunggal() {
   const isian = (k: keyof DataLulusan, label: string, extra: React.InputHTMLAttributes<HTMLInputElement> = {}) => (
     <div>
       <label className="label" htmlFor={k}>{label}</label>
-      <input id={k} className="input" value={d[k]} onChange={(e) => setD({ ...d, [k]: e.target.value.trimStart() })} {...extra} />
+      <input id={k} className="field" value={d[k]} onChange={(e) => setD({ ...d, [k]: e.target.value.trimStart() })} {...extra} />
     </div>
   );
 
   return (
-    <form className="kartu space-y-4" onSubmit={kirim}>
+    <form className="space-y-5 border-t-2 border-[var(--color-ink)] pt-6" onSubmit={kirim}>
       <div className="grid gap-4 sm:grid-cols-2">
         <div>
           <label className="label" htmlFor="pdf">PDF ijazah (maks 4 MB)</label>
-          <input key={kunciInput} id="pdf" type="file" accept="application/pdf" className="input" onChange={(e) => pilihPdf(e.target.files?.[0])} />
+          <input key={kunciInput} id="pdf" type="file" accept="application/pdf" className="field" onChange={(e) => pilihPdf(e.target.files?.[0])} />
         </div>
         {isian("wallet", "Wallet alumni", { placeholder: "0x…" })}
         {isian("nama", "Nama")}
@@ -112,17 +125,17 @@ function FormTunggal() {
         {isian("nomor_ijazah", "Nomor Ijazah")}
         {isian("tanggal_lulus", "Tanggal Lulus", { type: "date" })}
       </div>
-      <p className="break-all text-xs text-slate-500">Sidik jari: <span className="font-mono">{hash || "-"}</span> (dihitung otomatis)</p>
-      <button className="tombol" disabled={sibuk}>{sibuk ? "Memproses…" : "Tanda tangani & Terbitkan"}</button>
+      <p className="data break-all text-[var(--color-muted)]">Sidik jari: <span className="font-mono">{hash || "-"}</span> (dihitung otomatis)</p>
+      <button className="act" disabled={sibuk}>{sibuk ? "Memproses…" : "Tanda tangani & Terbitkan"}</button>
       {langkah.length > 0 && (
-        <p className="text-sm text-slate-600">
+        <p className="label normal-case tracking-normal">
           Progres:{" "}
           {["hash", "tanda tangan", "IPFS", "transaksi"].map((l) => (
             <span key={l} className="mr-3">{langkah.includes(l) ? (sibuk && langkah.at(-1) === l ? "⏳" : "✔") : "○"} {l}</span>
           ))}
         </p>
       )}
-      {error && <p className="text-sm text-red-700">{error}</p>}
+      {error && <p role="alert" className="border-2 border-[var(--color-state-invalid)] px-4 py-3 text-[var(--text-sm)] font-semibold text-[var(--color-state-invalid)]">{error}</p>}
       {hasil && <Hasil {...hasil} />}
     </form>
   );
@@ -198,26 +211,26 @@ function FormBatch() {
   }
 
   return (
-    <form className="kartu space-y-4" onSubmit={kirim}>
-      <p className="text-sm text-slate-600">
+    <form className="space-y-5 border-t-2 border-[var(--color-ink)] pt-6" onSubmit={kirim}>
+      <p className="prose text-[var(--text-sm)]">
         Kolom CSV: <span className="font-mono">nama,nim,prodi,nomor_ijazah,tanggal_lulus,wallet,file_pdf</span> ·{" "}
-        <a href="/templat-lulusan.csv" className="underline">unduh templat</a>. MetaMask akan meminta tanda tangan sekali per ijazah, lalu satu
+        <a href="/templat-lulusan.csv" className="act-text">unduh templat</a>. MetaMask akan meminta tanda tangan sekali per ijazah, lalu satu
         transaksi untuk semuanya.
       </p>
       <div className="grid gap-4 sm:grid-cols-2">
         <div>
           <label className="label" htmlFor="csv">Berkas CSV</label>
-          <input id="csv" type="file" accept=".csv,text/csv" className="input" onChange={(e) => setCsv(e.target.files?.[0] ?? null)} />
+          <input id="csv" type="file" accept=".csv,text/csv" className="field" onChange={(e) => setCsv(e.target.files?.[0] ?? null)} />
         </div>
         <div>
           <label className="label" htmlFor="pdfs">PDF ijazah (pilih semua sekaligus)</label>
-          <input id="pdfs" type="file" accept="application/pdf" multiple className="input" onChange={(e) => setPdfs(Array.from(e.target.files ?? []))} />
+          <input id="pdfs" type="file" accept="application/pdf" multiple className="field" onChange={(e) => setPdfs(Array.from(e.target.files ?? []))} />
         </div>
       </div>
-      <button className="tombol" disabled={sibuk}>{sibuk ? "Memproses…" : "Tanda tangani & Terbitkan batch"}</button>
-      {progres && <p className="text-sm text-slate-600">Progres: {progres}</p>}
+      <button className="act" disabled={sibuk}>{sibuk ? "Memproses…" : "Tanda tangani & Terbitkan batch"}</button>
+      {progres && <p className="label normal-case tracking-normal">Progres: {progres}</p>}
       {errors.length > 0 && (
-        <ul className="list-inside list-disc text-sm text-red-700">{errors.map((x) => <li key={x}>{x}</li>)}</ul>
+        <ul className="list-inside list-disc border-2 border-[var(--color-state-invalid)] px-4 py-3 text-[var(--text-sm)] text-[var(--color-state-invalid)]">{errors.map((x) => <li key={x}>{x}</li>)}</ul>
       )}
       {hasil && <Hasil {...hasil} />}
     </form>

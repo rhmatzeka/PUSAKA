@@ -1,0 +1,77 @@
+/* Hallmark · tokens · genre: editorial · theme: Grid (Swiss neo-grotesque)
+ * paper band: light (cool near-white) · display: grotesk-heavy lowercase · signal: ultramarine
+ * Portable: copy this file into another project and the system comes with it.
+ */
+:root {
+  /* Sheet */
+  --color-paper: oklch(99% 0.003 255);
+  --color-paper-2: oklch(97.2% 0.004 255);
+  --color-paper-3: oklch(94.5% 0.005 255);
+  --color-ink: oklch(16% 0.01 255);
+  --color-ink-2: oklch(38% 0.012 255);
+  --color-muted: oklch(52% 0.012 255);
+  --color-rule: oklch(88% 0.006 255);
+
+  /* One signal ink: ultramarine (institutional register) */
+  --color-signal: oklch(45% 0.19 264);
+  --color-signal-2: oklch(38% 0.17 264);
+  --color-on-signal: oklch(99% 0.003 255);
+  --color-focus: oklch(45% 0.19 264);
+
+  /* Verification states — never colour alone; always label + geometry */
+  --color-state-valid: oklch(45% 0.19 264);
+  --color-state-revoked: oklch(52% 0.13 75);
+  --color-state-invalid: oklch(47% 0.2 27);
+
+  /* Type */
+  --font-display: var(--font-archivo), "Archivo", ui-sans-serif, system-ui, sans-serif;
+  --font-body: var(--font-archivo), "Archivo", ui-sans-serif, system-ui, sans-serif;
+  --font-outlier: var(--font-geist-mono), ui-monospace, monospace;
+  --display-weight: 800;
+  --tracking-display: -0.045em;
+  --tracking-label: 0.09em;
+
+  --text-display: clamp(2.5rem, 7.4vw, 6.25rem);
+  --text-display-s: clamp(1.875rem, 4.2vw, 3.25rem);
+  --text-numeral: clamp(7rem, 22vw, 20rem);
+  --text-2xl: 2.25rem;
+  --text-xl: 1.75rem;
+  --text-lg: 1.375rem;
+  --text-md: 1.0625rem;
+  --text-sm: 0.9375rem;
+  --text-xs: 0.75rem;
+
+  /* 4pt scale */
+  --space-3xs: 0.125rem;
+  --space-2xs: 0.25rem;
+  --space-xs: 0.5rem;
+  --space-sm: 0.75rem;
+  --space-md: 1rem;
+  --space-lg: 1.5rem;
+  --space-xl: 2.5rem;
+  --space-2xl: 4rem;
+  --space-3xl: 6rem;
+  --space-4xl: 9rem;
+
+  /* Structure */
+  --rule-hair: 1px;
+  --rule-heavy: 2px;
+  --radius-card: 0;
+  --shadow-card: none;
+  --page-gutter: clamp(1rem, 4vw, 3.5rem);
+  --shell: 88rem;
+
+  /* Motion */
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in: cubic-bezier(0.7, 0, 0.84, 0);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --dur-micro: 120ms;
+  --dur-short: 190ms;
+  --dur-long: 420ms;
+
+  /* Layers */
+  --z-base: 1;
+  --z-raised: 10;
+  --z-sticky: 200;
+  --z-modal: 400;
+}

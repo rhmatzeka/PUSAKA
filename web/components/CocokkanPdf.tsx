@@ -14,18 +14,25 @@ export default function CocokkanPdf({ docHash }: { docHash: string }) {
   }
 
   return (
-    <div className="space-y-2 print:hidden">
-      <label className="tombol-garis cursor-pointer">
-        Cocokkan dengan PDF
-        <input type="file" accept="application/pdf" className="hidden" onChange={(e) => pilih(e.target.files?.[0])} />
+    <div className="no-print border-t-2 border-[var(--color-ink)] pt-4">
+      <p className="label">Cocokkan berkas Anda</p>
+      <label className="act-line mt-3 cursor-pointer">
+        Pilih berkas PDF
+        <input type="file" accept="application/pdf" className="sr-only" onChange={(e) => pilih(e.target.files?.[0])} />
       </label>
-      {hasil === "cocok" && <p className="text-sm font-medium text-emerald-700">✔ PDF ini sama persis dengan ijazah yang tercatat.</p>}
-      {hasil === "beda" && (
-        <p className="text-sm font-medium text-red-700">
-          ✘ PDF ini berbeda dari ijazah yang tercatat (sudah diubah, atau hasil scan/simpan ulang).
+      {hasil === "cocok" && (
+        <p className="mt-4 border-2 border-[var(--color-state-valid)] px-4 py-3 text-[var(--text-sm)] font-semibold text-[var(--color-state-valid)]">
+          ■ Sama persis dengan berkas yang tercatat.
         </p>
       )}
-      {hasil && hasil !== "cocok" && hasil !== "beda" && <p className="text-sm text-red-700">{hasil}</p>}
+      {hasil === "beda" && (
+        <p className="mt-4 border-2 border-[var(--color-state-invalid)] px-4 py-3 text-[var(--text-sm)] font-semibold text-[var(--color-state-invalid)]">
+          ✕ Berbeda dari berkas yang tercatat: sudah diubah, dipindai ulang, atau disimpan ulang.
+        </p>
+      )}
+      {hasil && hasil !== "cocok" && hasil !== "beda" && (
+        <p className="mt-4 text-[var(--text-sm)] font-semibold text-[var(--color-state-invalid)]">{hasil}</p>
+      )}
     </div>
   );
 }

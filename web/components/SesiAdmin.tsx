@@ -52,24 +52,38 @@ export default function SesiAdmin({ children }: { children: React.ReactNode }) {
 
   if (!sesi) {
     return (
-      <div className="kartu mx-auto max-w-md space-y-4 text-center">
-        <h1 className="text-xl font-bold">Masuk sebagai Admin BAAK</h1>
-        <p className="text-sm text-slate-600">
-          Hubungkan wallet MetaMask yang memiliki peran penerbit (ISSUER_ROLE), lalu tanda tangani pesan login. Tidak ada biaya.
-        </p>
-        <button className="tombol" onClick={masuk} disabled={sedang}>{sedang ? "Menunggu MetaMask…" : "Masuk dengan MetaMask"}</button>
-        {error && <p className="text-sm text-red-700">{error}</p>}
+      <div className="grid gap-x-8 gap-y-5 border-t-2 border-[var(--color-ink)] pt-6 md:grid-cols-12">
+        <div className="md:col-span-6">
+          <h1 className="display-s">masuk</h1>
+          <p className="prose mt-4">
+            Hubungkan wallet MetaMask yang memegang peran penerbit (ISSUER_ROLE), lalu tanda tangani pesan login.
+            Tanda tangan ini tidak mengirim transaksi dan tidak dikenai biaya.
+          </p>
+        </div>
+        <div className="md:col-span-4 md:col-start-9">
+          <button className="act" onClick={masuk} disabled={sedang}>
+            {sedang ? "Menunggu MetaMask…" : "Masuk dengan MetaMask"}
+          </button>
+          {error && (
+            <p role="alert" className="mt-4 border-2 border-[var(--color-state-invalid)] p-3 text-[var(--text-sm)] font-semibold text-[var(--color-state-invalid)]">
+              {error}
+            </p>
+          )}
+        </div>
       </div>
     );
   }
 
   return (
     <Ctx.Provider value={{ sesi, keluar: () => setSesi(null) }}>
-      <div className="mb-6 flex flex-wrap items-center gap-3 rounded-lg bg-white px-4 py-2 text-sm shadow-sm">
-        <span>
-          Admin: <span className="font-mono">{singkat(sesi.alamat)}</span> (ISSUER) <span className="text-emerald-600">●</span> {jaringan.nama}
-        </span>
-        <button className="ml-auto text-slate-500 underline" onClick={() => setSesi(null)}>Keluar</button>
+      <div className="mb-10 flex flex-wrap items-center gap-x-6 gap-y-2 border-b border-[var(--color-rule)] pb-3">
+        <p className="data text-[var(--color-muted)]">
+          <span className="mark-square mr-2 align-middle" aria-hidden />
+          {singkat(sesi.alamat)} · ISSUER · {jaringan.nama}
+        </p>
+        <button className="act-text ml-auto" onClick={() => setSesi(null)}>
+          Keluar
+        </button>
       </div>
       {children}
     </Ctx.Provider>

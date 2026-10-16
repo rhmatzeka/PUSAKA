@@ -2,7 +2,7 @@
 
 export default function TombolCetak() {
   return (
-    <button className="tombol-garis print:hidden" onClick={() => window.print()}>
+    <button className="act-text no-print" onClick={() => window.print()}>
       Cetak lembar verifikasi
     </button>
   );

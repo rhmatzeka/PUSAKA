@@ -43,39 +43,91 @@ export default function PortalAlumni() {
   }
 
   return (
-    <div className="space-y-6">
-      <h1 className="text-2xl font-bold">Portal Alumni</h1>
+    <div className="shell pb-20 pt-12">
+      <header className="grid gap-x-8 gap-y-4 md:grid-cols-12">
+        <h1 className="display-s md:col-span-5">ijazah saya</h1>
+        <p className="prose md:col-span-6 md:col-start-7">
+          Ambil salinan resmi dan kode QR ijazah Anda dari sini, lalu lampirkan saat melamar kerja. Ijazah terikat pada
+          wallet Anda dan tidak dapat dipindahtangankan.
+        </p>
+      </header>
+
       {!daftar ? (
-        <div className="kartu space-y-3">
-          <p className="text-sm text-slate-600">Hubungkan wallet MetaMask yang Anda daftarkan saat wisuda untuk melihat ijazah Anda.</p>
-          <button className="tombol" onClick={masuk} disabled={sedang}>{sedang ? "Menunggu MetaMask…" : "Hubungkan wallet"}</button>
-          {error && <p className="text-sm text-red-700">{error}</p>}
-        </div>
+        <section className="mt-14 grid gap-x-8 gap-y-5 border-t-2 border-[var(--color-ink)] pt-6 md:grid-cols-12">
+          <p className="prose md:col-span-6">
+            Hubungkan wallet MetaMask yang Anda daftarkan ke BAAK saat wisuda. Menghubungkan wallet tidak memindahkan
+            apa pun dan tidak dikenai biaya.
+          </p>
+          <div className="md:col-span-4 md:col-start-9">
+            <button className="act" onClick={masuk} disabled={sedang}>
+              {sedang ? "Menunggu MetaMask…" : "Hubungkan wallet"}
+            </button>
+            {error && (
+              <p role="alert" className="mt-4 border-2 border-[var(--color-state-invalid)] p-3 text-[var(--text-sm)] font-semibold text-[var(--color-state-invalid)]">
+                {error}
+              </p>
+            )}
+          </div>
+        </section>
       ) : (
         <>
-          <p className="text-sm text-slate-600">Wallet <span className="font-mono">{singkat(alamat)}</span></p>
-          {daftar.length === 0 && <p className="kartu text-slate-600">Belum ada ijazah untuk wallet ini.</p>}
+          <p className="data mt-10 border-t-2 border-[var(--color-ink)] pt-3 text-[var(--color-muted)]">
+            Wallet {singkat(alamat)} · {daftar.length} ijazah
+          </p>
+
+          {daftar.length === 0 && (
+            <p className="prose mt-8">
+              Belum ada ijazah untuk wallet ini. Pastikan Anda memakai wallet yang didaftarkan ke BAAK saat wisuda.
+            </p>
+          )}
+
           {daftar.map((x) => (
-            <div key={x.id} className="kartu grid gap-4 sm:grid-cols-[1fr_auto]">
-              <div className="space-y-1 text-sm">
-                <p className="text-lg font-semibold">{x.metadata?.name.replace(/^Ijazah - /, "") ?? `Ijazah #${x.id}`}</p>
-                <p>{atribut(x, "Program Studi")} · NIM {atribut(x, "NIM")}</p>
-                <p>No. Ijazah {atribut(x, "Nomor Ijazah")} · Token #{x.id}</p>
-                <p className={x.status === "VALID" ? "text-emerald-700" : "text-amber-700"}>
-                  Status: {x.status}{x.dicabut && ` (${x.alasanCabut})`}
-                </p>
-                <div className="flex flex-wrap gap-2 pt-2">
-                  {x.metadata && <a className="tombol" href={gatewayUrl(x.metadata.document)} download={`ijazah-${x.id}.pdf`} target="_blank">Unduh PDF</a>}
-                  <a className="tombol-garis" href={x.qr} download={`qr-ijazah-${x.id}.png`}>Unduh QR (PNG)</a>
-                  <Link className="tombol-garis" href={`/verify/${x.id}`}>Halaman verifikasi</Link>
+            <section key={x.id} className="grid gap-x-8 gap-y-6 border-t border-[var(--color-rule)] py-8 md:grid-cols-12">
+              <div className="md:col-span-7">
+                <p className="label">{x.status === "VALID" ? "■ Aktif" : `▲ ${x.status}`}</p>
+                <h2 className="display-s mt-1">{x.metadata?.name.replace(/^Ijazah - /, "") ?? `ijazah #${x.id}`}</h2>
+                <dl className="mt-5">
+                  {[
+                    ["Program studi", atribut(x, "Program Studi")],
+                    ["NIM", atribut(x, "NIM")],
+                    ["Nomor ijazah", atribut(x, "Nomor Ijazah")],
+                    ["Token", `#${x.id}`],
+                  ].map(([k, v]) => (
+                    <div key={k} className="grid grid-cols-[9rem_1fr] gap-4 border-t border-[var(--color-rule)] py-2 text-[var(--text-sm)]">
+                      <dt className="label">{k}</dt>
+                      <dd className="font-medium">{v}</dd>
+                    </div>
+                  ))}
+                </dl>
+                {x.dicabut && (
+                  <p className="mt-4 border-2 border-[var(--color-state-revoked)] p-3 text-[var(--text-sm)] font-semibold text-[var(--color-state-revoked)]">
+                    Dicabut: {x.alasanCabut}
+                  </p>
+                )}
+                <div className="mt-6 flex flex-wrap items-center gap-x-6 gap-y-3">
+                  {x.metadata && (
+                    <a className="act" href={gatewayUrl(x.metadata.document)} download={`ijazah-${x.id}.pdf`} target="_blank">
+                      Unduh PDF
+                    </a>
+                  )}
+                  <a className="act-text" href={x.qr} download={`qr-ijazah-${x.id}.png`}>
+                    Unduh QR
+                  </a>
+                  <Link className="act-text" href={`/verify/${x.id}`}>
+                    Halaman verifikasi
+                  </Link>
                 </div>
-                <p className="pt-2 text-xs text-slate-500">
-                  Kirim PDF ini apa adanya ke pemberi kerja. PDF yang dicetak ulang, dikompres, atau hasil scan tidak akan cocok; gunakan QR untuk ijazah kertas.
+                <p className="prose mt-5 text-[var(--text-sm)]">
+                  Kirim berkas PDF ini apa adanya. Berkas yang dicetak ulang, dikompres, atau dipindai tidak akan
+                  cocok; untuk ijazah kertas, pakai kode QR.
                 </p>
               </div>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={x.qr} alt={`QR token ${x.id}`} width={160} height={160} className="mx-auto" />
-            </div>
+              <figure className="md:col-span-3 md:col-start-10">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={x.qr} alt={`Kode QR token ${x.id}`} width={200} height={200} className="w-full max-w-50" />
+                <figcaption className="label mt-2">Token #{x.id}</figcaption>
+              </figure>
+            </section>
           ))}
         </>
       )}
