@@ -8,6 +8,6 @@ use vercel_runtime::axum::VercelLayer;
 async fn main() -> Result<(), Error> {
     let app = ServiceBuilder::new()
         .layer(VercelLayer::new())
-        .service(pusaka_api::router());
+        .service(pusaka_api::router_dasar());
     vercel_runtime::run(app).await
 }

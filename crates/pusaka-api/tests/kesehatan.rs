@@ -5,7 +5,7 @@ use serde_json::{Value, json};
 use tower::ServiceExt;
 
 async fn panggil(uri: &str) -> (StatusCode, Value) {
-    let res = pusaka_api::router()
+    let res = pusaka_api::router_dasar()
         .oneshot(Request::get(uri).body(Body::empty()).unwrap())
         .await
         .unwrap();
@@ -30,7 +30,7 @@ async fn rute_tidak_dikenal_404_json() {
 
 #[tokio::test]
 async fn metode_salah_405_json() {
-    let res = pusaka_api::router()
+    let res = pusaka_api::router_dasar()
         .oneshot(Request::post("/api/kesehatan").body(Body::empty()).unwrap())
         .await
         .unwrap();
@@ -38,4 +38,37 @@ async fn metode_salah_405_json() {
     let bytes = res.into_body().collect().await.unwrap().to_bytes();
     let body: Value = serde_json::from_slice(&bytes).expect("body 405 harus JSON");
     assert_eq!(body["kode"], "METODE_TIDAK_DIIZINKAN");
+}
+
+async fn panggil_darurat(metode: &str, uri: &str) -> (StatusCode, Value) {
+    let res = pusaka_api::router_darurat("env belum diisi: PINATA_JWT".into())
+        .oneshot(
+            Request::builder()
+                .method(metode)
+                .uri(uri)
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    let status = res.status();
+    let bytes = res.into_body().collect().await.unwrap().to_bytes();
+    (status, serde_json::from_slice(&bytes).unwrap())
+}
+
+#[tokio::test]
+async fn router_darurat_menjelaskan_env_yang_kurang() {
+    let (s, b) = panggil_darurat("GET", "/api/sesi").await;
+    assert_eq!(s, StatusCode::SERVICE_UNAVAILABLE);
+    assert_eq!(b["kode"], "KONFIGURASI_TIDAK_LENGKAP");
+    assert!(b["pesan"].as_str().unwrap().contains("PINATA_JWT"));
+    let (s, _) = panggil_darurat("POST", "/api/draf").await;
+    assert_eq!(s, StatusCode::SERVICE_UNAVAILABLE);
+}
+
+#[tokio::test]
+async fn router_darurat_tetap_melayani_kesehatan() {
+    let (s, b) = panggil_darurat("GET", "/api/kesehatan").await;
+    assert_eq!(s, StatusCode::OK);
+    assert_eq!(b["layanan"], "pusaka-api");
 }

@@ -1,11 +1,17 @@
 //! Backend PUSAKA. Router yang sama dijalankan di Vercel (`api/index.rs`)
 //! dan di laptop (`src/main.rs`).
 
+pub mod config;
+pub mod galat;
+pub mod masukan;
+
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
-use axum::routing::get;
+use axum::routing::{any, get};
 use axum::{Json, Router};
 use serde::Serialize;
+
+use crate::galat::{Galat, GalatJson};
 
 #[derive(Serialize)]
 struct Kesehatan {
@@ -13,16 +19,25 @@ struct Kesehatan {
     versi: &'static str,
 }
 
-#[derive(Serialize)]
-struct GalatJson {
-    kode: &'static str,
-    pesan: &'static str,
+/// Rute yang selalu ada: kesehatan dan jawaban JSON untuk 404/405.
+pub fn router_dasar() -> Router {
+    akhiri(Router::new())
 }
 
-/// Semua rute HTTP PUSAKA.
-pub fn router() -> Router {
-    Router::new()
-        .route("/api/kesehatan", get(kesehatan))
+/// Dipakai saat env belum lengkap: semua `/api/*` selain kesehatan menjawab 503
+/// dengan nama env yang kurang (tanpa nilai rahasia).
+pub fn router_darurat(pesan: String) -> Router {
+    akhiri(Router::new().route(
+        "/api/{*sisa}",
+        any(move || {
+            let pesan = pesan.clone();
+            async move { Galat::KonfigurasiTidakLengkap(pesan) }
+        }),
+    ))
+}
+
+fn akhiri(r: Router) -> Router {
+    r.route("/api/kesehatan", get(kesehatan))
         .method_not_allowed_fallback(metode_tidak_diizinkan)
         .fallback(tidak_ditemukan)
 }
@@ -34,14 +49,8 @@ async fn kesehatan() -> Json<Kesehatan> {
     })
 }
 
-async fn tidak_ditemukan() -> impl IntoResponse {
-    (
-        StatusCode::NOT_FOUND,
-        Json(GalatJson {
-            kode: "TIDAK_DITEMUKAN",
-            pesan: "Rute tidak ditemukan",
-        }),
-    )
+async fn tidak_ditemukan() -> Galat {
+    Galat::TidakDitemukan("Rute tidak ditemukan".into())
 }
 
 async fn metode_tidak_diizinkan() -> impl IntoResponse {
@@ -49,7 +58,7 @@ async fn metode_tidak_diizinkan() -> impl IntoResponse {
         StatusCode::METHOD_NOT_ALLOWED,
         Json(GalatJson {
             kode: "METODE_TIDAK_DIIZINKAN",
-            pesan: "Metode HTTP tidak diizinkan untuk rute ini",
+            pesan: "Metode HTTP tidak diizinkan untuk rute ini".into(),
         }),
     )
 }

@@ -10,5 +10,5 @@ async fn main() -> std::io::Result<()> {
     let alamat = std::env::var("PUSAKA_API_ALAMAT").unwrap_or_else(|_| "127.0.0.1:8787".into());
     let listener = tokio::net::TcpListener::bind(&alamat).await?;
     tracing::info!(%alamat, "pusaka-api berjalan");
-    axum::serve(listener, pusaka_api::router()).await
+    axum::serve(listener, pusaka_api::router_dasar()).await
 }

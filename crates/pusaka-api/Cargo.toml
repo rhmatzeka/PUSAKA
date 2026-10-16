@@ -6,13 +6,27 @@ license.workspace = true
 publish = false
 
 [dependencies]
+pusaka-core = { path = "../pusaka-core" }
+aes-gcm = { version = "0.10", default-features = false, features = ["aes", "alloc"] }
+async-trait = "0.1"
 axum = { workspace = true }
-tokio = { workspace = true }
+chrono = { version = "0.4", default-features = false, features = ["clock", "serde", "std"] }
+dotenvy = "0.15"
+getrandom = "0.3"
+hex = "0.4"
+jsonwebtoken = { version = "11", default-features = false, features = ["use_pem", "rust_crypto"] }
+reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls", "multipart"] }
 serde = { workspace = true }
+serde_json = { workspace = true }
+sqlx = { version = "0.9", default-features = false, features = ["runtime-tokio", "tls-rustls-ring-webpki", "postgres", "uuid", "chrono", "json", "migrate", "macros"] }
+thiserror = { workspace = true }
+tokio = { workspace = true }
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
+uuid = { version = "1", features = ["v4", "serde"] }
 
 [dev-dependencies]
-tower = { workspace = true }
-serde_json = { workspace = true }
+axum = { workspace = true, features = ["multipart"] }
 http-body-util = { workspace = true }
+k256 = { version = "0.13", features = ["ecdsa"] }
+tower = { workspace = true }
