@@ -253,7 +253,7 @@ Diturunkan dari aplikasi pendamping Quantum Wallet dan Raycast (mockup v3 di `.s
 
 - **Latar:** ruang hitam-biru dengan pendar biru di belakang objek dan titik bintang halus. Tidak ada kartu kaca dekoratif.
 - **HUD:** label mono kapital berjarak lebar di sudut layar (`PSK-OP / BAAK · AKTIF`, `WALLET / 41C2....9E0A`). Garis skala di tepi kiri membawa angka nyata (jumlah tercatat, siap, menunggu).
-- **Objek:** Segel Pusaka 3D kecil (three.js, satu instance bersama) dengan cincin orbit. Statusnya ikut berubah warna.
+- **Objek:** Segel Pusaka berupa keping heksagon (CSS) dengan cincin orbit di halaman dalam; versi three.js hanya di beranda supaya halaman periksa ringan. Warna pendarnya ikut status.
 - **Operator:** jendela perintah gaya Raycast. Kotak cari dengan chip filter, daftar kiri, detail label–nilai kanan, bilah bawah berisi aksi utama `↵` dan `Aksi ⌘K`, plus dok ikon di bawah jendela. Semua aksi bisa dijalankan dengan keyboard.
 - **Pejabat (`/meja`):** gaya aplikasi Quantum murni. Ijazah melayang miring di tengah dengan orbit, data lulusan besar, tombol berkurung `‹ Tanda tangani ↵ ›` dan `‹ Tolak X ›`, serta "Setujui sisanya".
 - **Hasil verifikasi:** baris bukti gaya daftar aset Quantum (ikon bulat, nama bukti, keterangan mono hijau "↑ COCOK 100%", nilai mono di kanan).
