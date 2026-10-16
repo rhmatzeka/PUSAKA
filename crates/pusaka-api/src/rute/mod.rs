@@ -3,6 +3,7 @@
 pub mod draf;
 pub mod ipfs;
 pub mod sesi;
+pub mod terbit;
 pub mod ttd;
 
 use axum::Router;
@@ -19,4 +20,5 @@ pub fn semua() -> Router<Negara> {
         .route("/api/draf/{id}/setujui", post(draf::setujui))
         .route("/api/draf/{id}/tolak", post(draf::tolak))
         .route("/api/draf/{id}/kirim-ulang", post(draf::kirim_ulang))
+        .route("/api/terbit", post(terbit::catat))
 }

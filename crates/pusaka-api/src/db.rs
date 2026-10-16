@@ -366,3 +366,20 @@ pub async fn kedaluwarsakan(db: &PgPool) -> Result<(), Galat> {
     .await?;
     Ok(())
 }
+
+/// Tandai draf ber-`doc_hash` sebagai TERBIT dengan `token_id` dari event on-chain.
+/// Kontrak adalah sumber kebenaran: status apa pun selain DICABUT ikut diperbarui.
+pub async fn tandai_terbit<'e>(
+    e: impl PgExecutor<'e>,
+    doc_hash: &[u8; 32],
+    token_id: i64,
+) -> Result<Option<(Uuid, String)>, Galat> {
+    Ok(sqlx::query_as(
+        "update draf set status = 'TERBIT', token_id = $2, diubah = now() \
+         where doc_hash = $1 and status <> 'DICABUT' returning id, penerima",
+    )
+    .bind(doc_hash.as_slice())
+    .bind(token_id)
+    .fetch_optional(e)
+    .await?)
+}
