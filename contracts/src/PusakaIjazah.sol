@@ -82,6 +82,34 @@ contract PusakaIjazah is ERC721URIStorage, AccessControl, EIP712, IERC5192 {
         return _terbitkan(p, sig, uri);
     }
 
+    function terbitkanBatch(Penerbitan[] calldata p, bytes[] calldata sig, string[] calldata uri)
+        external
+        onlyRole(OPERATOR_ROLE)
+        returns (uint256[] memory ids)
+    {
+        uint256 n = p.length;
+        if (sig.length != n || uri.length != n) revert PanjangTidakSama();
+        if (n == 0 || n > MAKS_BATCH) revert BatchTerlaluBesar(n);
+        ids = new uint256[](n);
+        for (uint256 i; i < n; ++i) {
+            ids[i] = _terbitkan(p[i], sig[i], uri[i]);
+        }
+    }
+
+    function cabut(Pencabutan calldata c, bytes calldata sig, string calldata alasan)
+        external
+        onlyRole(OPERATOR_ROLE)
+    {
+        if (block.timestamp > c.batasWaktu) revert TandaTanganKedaluwarsa(c.batasWaktu);
+        if (keccak256(bytes(alasan)) != c.alasanHash) revert AlasanTidakCocok();
+        Ijazah storage d = _ijazah[c.tokenId];
+        if (d.waktuTerbit == 0) revert IjazahTidakAda(c.tokenId);
+        if (d.waktuCabut != 0) revert SudahDicabut(c.tokenId);
+        _wajibPenandaTangan(digestPencabutan(c), sig);
+        d.waktuCabut = uint64(block.timestamp);
+        emit Dicabut(c.tokenId, alasan);
+    }
+
     // ------------------------------------------------------------------ baca
 
     function periksa(bytes32 docHash)
@@ -99,6 +127,19 @@ contract PusakaIjazah is ERC721URIStorage, AccessControl, EIP712, IERC5192 {
         Ijazah memory d = _ijazah[tokenId];
         if (d.waktuTerbit == 0) revert IjazahTidakAda(tokenId);
         return d;
+    }
+
+    /// Halaman data untuk Buku Induk. Elemen ke-i adalah token `mulai + i`.
+    function daftar(uint256 mulai, uint256 jumlah) external view returns (Ijazah[] memory hasil) {
+        uint256 total = _total;
+        if (mulai == 0 || mulai > total || jumlah == 0) return new Ijazah[](0);
+        uint256 sisa = total - mulai + 1;
+        uint256 n = jumlah < sisa ? jumlah : sisa;
+        if (n > MAKS_HALAMAN) n = MAKS_HALAMAN;
+        hasil = new Ijazah[](n);
+        for (uint256 i; i < n; ++i) {
+            hasil[i] = _ijazah[mulai + i];
+        }
     }
 
     function totalTerbit() external view returns (uint256) {
