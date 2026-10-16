@@ -104,8 +104,9 @@ struct Ijazah {
 | `locked(uint256) view` | publik | selalu `true` (ERC-5192) |
 
 - **Soulbound:** `_update` menolak semua perpindahan selain mint. `supportsInterface` melaporkan ERC-721 dan ERC-5192 (`0xb45a3c0e`).
+- **Pemisahan tugas ditegakkan di kontrak:** penanda tangan EIP-712 tidak boleh sama dengan pengirim transaksi (`PemisahanTugasDilanggar`), sehingga satu wallet yang memegang dua peran tetap tidak bisa menerbitkan atau mencabut sendirian. Admin (`DEFAULT_ADMIN_ROLE`) tetap pihak tepercaya yang membagikan peran; asumsi ini ditulis terbuka di skripsi.
 - **Ijazah tetap sah walau peran pejabatnya dicabut.** `periksa` tidak mengecek peran penanda tangan saat ini, sama seperti ijazah kertas yang tetap sah setelah rektornya berganti. Peran hanya dicek saat terbit dan saat cabut.
-- **Error:** `HashSudahTerbit`, `PenandaTanganTidakBerwenang`, `TandaTanganKedaluwarsa`, `MetadataTidakCocok`, `IjazahTidakAda`, `SudahDicabut`, `TidakDapatDipindahtangankan`, `PanjangTidakSama`, `BatchTerlaluBesar`.
+- **Error:** `HashSudahTerbit`, `PenandaTanganTidakBerwenang`, `TandaTanganKedaluwarsa`, `MetadataTidakCocok`, `IjazahTidakAda`, `SudahDicabut`, `TidakDapatDipindahtangankan`, `PanjangTidakSama`, `BatchTerlaluBesar`, `PemisahanTugasDilanggar`, `AlasanTidakCocok`, `HashKosong`.
 - **Event:** `Diterbitkan(uint256 indexed tokenId, address indexed penerima, bytes32 indexed docHash, address penandaTangan)`, `Dicabut(uint256 indexed tokenId, string alasan)`, `Locked(uint256 tokenId)`.
 
 ### 5.3 Tes Foundry

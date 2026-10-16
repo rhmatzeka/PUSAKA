@@ -38,3 +38,13 @@ jobs:
       - run: npm --prefix web ci
       - run: npm --prefix web run check
       - run: npm --prefix web run build
+
+  kontrak:
+    runs-on: ubuntu-latest
+    defaults: { run: { working-directory: contracts } }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: foundry-rs/foundry-toolchain@v1
+      - run: forge fmt --check
+      - run: forge test
+      - run: ./script/ekspor-abi.sh && git diff --exit-code ../abi
