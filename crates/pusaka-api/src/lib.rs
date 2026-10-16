@@ -13,6 +13,7 @@ pub mod pinata;
 pub mod privy;
 pub mod rantai;
 pub mod rute;
+pub mod validasi;
 
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
