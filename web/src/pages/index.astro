@@ -1,0 +1,23 @@
+---
+import '../styles/global.css';
+---
+<html lang="id">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>PUSAKA v2</title>
+  </head>
+  <body class="min-h-dvh bg-neutral-950 text-neutral-100 grid place-items-center font-mono">
+    <main class="text-center">
+      <h1 class="text-2xl">PUSAKA v2 · kerangka</h1>
+      <p id="status" class="mt-4 text-neutral-400">memanggil /api/kesehatan…</p>
+    </main>
+    <script>
+      const el = document.getElementById('status')!;
+      fetch('/api/kesehatan')
+        .then((r) => r.json())
+        .then((j: { layanan: string; versi: string }) => (el.textContent = `API Rust: ${j.layanan} ${j.versi}`))
+        .catch(() => (el.textContent = 'API Rust tidak terjangkau'));
+    </script>
+  </body>
+</html>
