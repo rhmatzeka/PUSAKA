@@ -79,3 +79,8 @@ test('galat API menjadi GalatApi dengan kode dan pesan dari server', async () =>
 test('galat tanpa JSON tetap terbaca', async () => {
   await expect(api().kunci(9)).rejects.toMatchObject({ status: 502, kode: 'GALAT', message: 'Server menjawab 502' });
 });
+
+test('daftar ijazah milik pengguna', async () => {
+  await api().milik();
+  expect(diterima.at(-1)).toMatchObject({ metode: 'GET', url: '/api/milik' });
+});
