@@ -6,6 +6,8 @@ pub mod galat;
 pub mod kunci;
 pub mod layanan;
 pub mod masukan;
+pub mod pinata;
+pub mod privy;
 pub mod rantai;
 
 use axum::http::StatusCode;
