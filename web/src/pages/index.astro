@@ -1,23 +1,143 @@
 ---
+import '@fontsource/sora/300.css';
+import '@fontsource/sora/400.css';
+import '@fontsource/sora/500.css';
+import '@fontsource/sora/600.css';
+import '@fontsource/space-mono/400.css';
 import '../styles/global.css';
+import '../styles/beranda.css';
+import { BABAK } from '../beranda/babak';
+
+const latar = Object.fromEntries(BABAK.map((b) => [b.nama, b.latar]));
+const segel = (nada = 'diam') => ({ nada });
 ---
+
+<!doctype html>
 <html lang="id">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>PUSAKA v2</title>
+    <meta name="description" content="PUSAKA: ijazah digital Universitas Pamulang yang dijaga blockchain dan bisa diperiksa siapa saja, tanpa akun." />
+    <meta name="theme-color" content="#03060c" />
+    <title>PUSAKA · Ijazah digital Universitas Pamulang</title>
   </head>
-  <body class="min-h-dvh bg-neutral-950 text-neutral-100 grid place-items-center font-mono">
-    <main class="text-center">
-      <h1 class="text-2xl">PUSAKA v2 · kerangka</h1>
-      <p id="status" class="mt-4 text-neutral-400">memanggil /api/kesehatan…</p>
+  <body class="beranda">
+    <canvas id="kanvas-beranda" aria-hidden="true"></canvas>
+    <header class="beranda-atas">
+      <a class="merek" href="/">Pusaka ⬢<small>Universitas Pamulang</small></a>
+      <nav aria-label="Utama">
+        <a class="br" href="/periksa">Periksa ijazah</a>
+        <a class="br" href="/masuk">Masuk</a>
+      </nav>
+    </header>
+
+    <main id="beranda">
+      <section class="babak" data-untuk="pembuka" style={`--latar-statis:${latar['pembuka']}`}>
+        <div class="layar">
+          <div class="isi">
+            <h1 class="judul-beranda sudut-kanan-atas">Ijazah yang<br />mustahil dipalsukan</h1>
+            <p class="sudut-kiri-bawah lead">Dijaga blockchain.<br />Diperiksa siapa saja, tanpa akun.</p>
+            <div class="hud sudut-kanan-bawah">Gulir<b>↓ 6 babak</b></div>
+          </div>
+          <div class="segel segel-statis" data-nada={segel().nada} aria-hidden="true">
+            <span class="segel-orbit segel-orbit-a"></span><span class="segel-orbit segel-orbit-b"></span><div class="segel-keping"></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="babak terang" data-untuk="cetak-biru" style={`--latar-statis:${latar['cetak-biru']}`}>
+        <div class="layar">
+          <div class="isi">
+            <h2 class="judul-beranda sudut-kiri-atas">Satu ijazah,</h2>
+            <h2 class="judul-beranda sudut-kanan-atas aksen">lima lapis bukti</h2>
+            <ol class="lapis-bukti">
+              <li><b>PDF ijazah</b> asli dari BAAK</li>
+              <li><b>Sidik jari Keccak-256</b> dari setiap bita berkas</li>
+              <li><b>Tanda tangan Rektor</b> ECDSA (EIP-712)</li>
+              <li><b>Token ERC-721</b> soulbound di Polygon</li>
+              <li><b>Berkas terenkripsi</b> AES-256 di IPFS</li>
+            </ol>
+          </div>
+          <div class="segel segel-statis" aria-hidden="true">
+            <span class="segel-orbit segel-orbit-a"></span><div class="segel-keping"></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="babak" data-untuk="ponsel" style={`--latar-statis:${latar['ponsel']}`}>
+        <div class="layar">
+          <div class="isi">
+            <h2 class="judul-beranda sudut-kanan-atas aksen">Periksa dari ponsel mana pun</h2>
+            <div class="ponsel" aria-hidden="true">
+              <div class="layar-ponsel">
+                <div class="hud">PSK-1284<b data-nada="ok">↑ Asli · tercatat</b></div>
+                <p class="nama-ponsel">Dewi Lestari Anggraini</p>
+                <p class="sub">S.Kom. · Teknik Informatika</p>
+                <ul class="bukti">
+                  <li><span class="ikon">⌗</span><span class="nama">Sidik jari<span class="ket" data-nada="ok">↑ Cocok 100%</span></span></li>
+                  <li><span class="ikon">✍</span><span class="nama">Tanda tangan Rektor<span class="ket" data-nada="ok">↑ Sah · EIP-712</span></span></li>
+                  <li><span class="ikon">⛓</span><span class="nama">Status<span class="ket" data-nada="ok">↑ Tidak dicabut</span></span></li>
+                </ul>
+              </div>
+            </div>
+            <div class="kartu-beranda sudut-kanan-bawah">
+              <h3>Tanpa akun, tanpa biaya</h3>
+              <p>Pindai QR di ijazah atau unggah PDF-nya. Hasilnya dibaca langsung dari blockchain, tidak lewat server kampus.</p>
+              <a class="br" href="/periksa">Coba periksa</a>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="babak" data-untuk="pemalsuan" style={`--latar-statis:${latar['pemalsuan']}`}>
+        <div class="layar">
+          <div class="isi">
+            <div class="layar-palsu" aria-live="off">
+              <div class="hud">Sidik jari berkas</div>
+              <p class="mono sidik" data-sidik>7c1e9a42d0b3f58e61c4a7d2e09b5f3a</p>
+              <p class="mono status-palsu" data-status-palsu data-nada="bad">1 bita berubah → TIDAK VALID</p>
+            </div>
+            <h2 class="judul-beranda sudut-kiri-bawah">Bisa dipalsukan?</h2>
+            <h2 class="judul-beranda sudut-kanan-bawah merah">Langsung ketahuan.</h2>
+          </div>
+        </div>
+      </section>
+
+      <section class="babak" data-untuk="inti" style={`--latar-statis:${latar['inti']}`}>
+        <div class="layar">
+          <div class="isi">
+            <div class="kartu-beranda sudut-kanan-bawah">
+              <h3>Tercatat permanen</h3>
+              <p>Setiap ijazah adalah token yang tidak bisa dipindahtangankan. Pencabutan pun tercatat terbuka, lengkap dengan alasannya.</p>
+              <dl class="data">
+                <dt>Kontrak</dt><dd class="mono" data-alamat-kontrak>—</dd>
+                <dt>Ijazah tercatat</dt><dd class="mono" data-total-terbit>—</dd>
+              </dl>
+            </div>
+          </div>
+          <div class="segel segel-statis" data-nada="ok" aria-hidden="true">
+            <span class="segel-orbit segel-orbit-a"></span><span class="segel-orbit segel-orbit-b"></span><div class="segel-keping"></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="babak terang" data-untuk="penutup" style={`--latar-statis:${latar['penutup']}`}>
+        <div class="layar">
+          <div class="isi penutup">
+            <h2 class="judul-beranda">Asli atau palsu?</h2>
+            <p class="lead">Periksa sendiri.</p>
+            <div class="aksi">
+              <a class="br" data-utama href="/periksa">Periksa ijazah</a>
+              <a class="br" href="/masuk">Masuk</a>
+            </div>
+          </div>
+        </div>
+      </section>
     </main>
+
     <script>
-      const el = document.getElementById('status')!;
-      fetch('/api/kesehatan')
-        .then((r) => r.json())
-        .then((j: { layanan: string; versi: string }) => (el.textContent = `API Rust: ${j.layanan} ${j.versi}`))
-        .catch(() => (el.textContent = 'API Rust tidak terjangkau'));
+      import { mulai } from '../beranda/mulai';
+      void mulai();
     </script>
   </body>
 </html>

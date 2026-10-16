@@ -1,0 +1,374 @@
+/* Beranda: kanvas three.js tetap di belakang, enam babak dengan layar sticky. */
+
+body.beranda {
+  margin: 0;
+  color: var(--ink);
+  font-family: var(--sans);
+  background: var(--latar-beranda, #03060c);
+  transition: color var(--cepat);
+}
+
+html[data-terang="1"] body.beranda {
+  color: #0d1424;
+}
+
+#kanvas-beranda {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100dvh;
+  pointer-events: none;
+}
+
+html.statis #kanvas-beranda {
+  display: none;
+}
+
+.beranda-atas {
+  position: fixed;
+  inset: 0 0 auto;
+  z-index: 5;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 20px clamp(16px, 4vw, 40px);
+  mix-blend-mode: difference;
+}
+
+.beranda-atas .merek,
+.beranda-atas .br {
+  color: #fff;
+}
+
+.beranda-atas nav {
+  display: flex;
+  gap: 4px 18px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.babak {
+  position: relative;
+  height: 135vh;
+}
+
+.layar {
+  position: sticky;
+  top: 0;
+  height: 100dvh;
+  overflow: hidden;
+}
+
+.isi {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  padding: 92px clamp(16px, 4vw, 48px) 40px;
+  transition: opacity 400ms, transform 400ms;
+}
+
+/* Saat animasi hidup, layar tiap babak dipaku di viewport (bagian hanya penyedia panjang gulir),
+   dan hanya babak aktif yang tampil. Tanpa JS/statis: alur biasa, semua tampil. */
+html.hidup .layar {
+  position: fixed;
+  inset: 0;
+  height: 100dvh;
+  pointer-events: none;
+}
+
+html.hidup .isi a,
+html.hidup .isi button {
+  pointer-events: auto;
+}
+
+html.hidup .babak .isi {
+  visibility: hidden;
+}
+
+html.hidup[data-babak="pembuka"] [data-untuk="pembuka"] .isi,
+html.hidup[data-babak="cetak-biru"] [data-untuk="cetak-biru"] .isi,
+html.hidup[data-babak="ponsel"] [data-untuk="ponsel"] .isi,
+html.hidup[data-babak="pemalsuan"] [data-untuk="pemalsuan"] .isi,
+html.hidup[data-babak="inti"] [data-untuk="inti"] .isi,
+html.hidup[data-babak="penutup"] [data-untuk="penutup"] .isi {
+  visibility: visible;
+}
+
+html.hidup .babak .isi {
+  opacity: 0;
+  transform: translateY(14px);
+}
+
+html.hidup[data-babak="pembuka"] [data-untuk="pembuka"] .isi,
+html.hidup[data-babak="cetak-biru"] [data-untuk="cetak-biru"] .isi,
+html.hidup[data-babak="ponsel"] [data-untuk="ponsel"] .isi,
+html.hidup[data-babak="pemalsuan"] [data-untuk="pemalsuan"] .isi,
+html.hidup[data-babak="inti"] [data-untuk="inti"] .isi,
+html.hidup[data-babak="penutup"] [data-untuk="penutup"] .isi {
+  opacity: 1;
+  transform: none;
+}
+
+.judul-beranda {
+  margin: 0;
+  font-size: clamp(30px, 5.6vw, 64px);
+  font-weight: 400;
+  line-height: 1.04;
+  letter-spacing: -0.02em;
+}
+
+.aksen {
+  color: #5b8cff;
+}
+
+.merah {
+  color: var(--bad);
+}
+
+.lead {
+  margin: 0;
+  font-size: clamp(16px, 1.6vw, 19px);
+  font-weight: 300;
+  line-height: 1.45;
+}
+
+.sudut-kiri-atas,
+.sudut-kanan-atas,
+.sudut-kiri-bawah,
+.sudut-kanan-bawah {
+  position: absolute;
+  max-width: min(560px, calc(100% - 32px));
+}
+
+.sudut-kiri-atas {
+  top: 96px;
+  left: clamp(16px, 4vw, 48px);
+}
+
+.sudut-kanan-atas {
+  top: 96px;
+  right: clamp(16px, 4vw, 48px);
+  text-align: right;
+}
+
+.sudut-kiri-bawah {
+  bottom: 44px;
+  left: clamp(16px, 4vw, 48px);
+}
+
+.sudut-kanan-bawah {
+  right: clamp(16px, 4vw, 48px);
+  bottom: 44px;
+}
+
+html[data-terang="1"] .hud,
+.terang .hud {
+  color: #4a5670;
+}
+
+/* Babak 2: daftar lapis bukti di kanan, seperti daftar komponen. */
+.lapis-bukti {
+  position: absolute;
+  right: clamp(16px, 4vw, 48px);
+  bottom: 56px;
+  width: min(360px, calc(100% - 32px));
+  margin: 0;
+  padding: 18px 22px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.72);
+  backdrop-filter: blur(8px);
+  color: #4a5670;
+  font-size: 14px;
+  list-style: none;
+  counter-reset: lapis;
+}
+
+.lapis-bukti li {
+  padding: 7px 0;
+  counter-increment: lapis;
+}
+
+.lapis-bukti li::before {
+  content: counter(lapis) " ";
+  font-family: var(--mono);
+  color: #5b8cff;
+  margin-right: 8px;
+}
+
+.lapis-bukti b {
+  color: #0d1424;
+  font-weight: 500;
+}
+
+/* Babak 3: ponsel naik. */
+.ponsel {
+  position: absolute;
+  left: clamp(16px, 12vw, 180px);
+  bottom: -8px;
+  width: min(300px, 70vw);
+  aspect-ratio: 9 / 18;
+  padding: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 40px;
+  background: #0b0f17;
+  box-shadow: 0 40px 90px -30px #000;
+  transform: translateY(calc((1 - var(--naik, 1)) * 55vh));
+}
+
+.layar-ponsel {
+  height: 100%;
+  padding: 26px 18px;
+  border-radius: 30px;
+  background:
+    radial-gradient(260px 200px at 50% 30%, rgba(40, 110, 200, 0.45), transparent 70%),
+    #03060c;
+  overflow: hidden;
+}
+
+.nama-ponsel {
+  margin: 18px 0 2px;
+  font-size: 20px;
+  font-weight: 500;
+}
+
+.layar-ponsel .bukti li {
+  padding: 9px 0;
+  font-size: 13px;
+}
+
+.kartu-beranda {
+  width: min(380px, calc(100% - 32px));
+  padding: 22px 24px;
+  border-radius: 6px;
+  background: rgba(14, 19, 28, 0.78);
+  backdrop-filter: blur(10px);
+}
+
+.kartu-beranda h3 {
+  margin: 0 0 8px;
+  font-size: 19px;
+  font-weight: 500;
+}
+
+.kartu-beranda p {
+  margin: 0 0 12px;
+  color: var(--ink2);
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+/* Babak 4: sidik jari berjalan. */
+.layar-palsu {
+  position: absolute;
+  top: 22%;
+  left: 50%;
+  width: min(640px, calc(100% - 32px));
+  padding: 14px 18px;
+  border-radius: 6px;
+  background: rgba(20, 4, 8, 0.55);
+  backdrop-filter: blur(6px);
+  transform: translateX(-50%);
+  text-align: center;
+}
+
+.sidik {
+  margin: 8px 0 0;
+  font-size: clamp(14px, 2.4vw, 22px);
+  letter-spacing: 0.12em;
+  overflow-wrap: anywhere;
+}
+
+.status-palsu {
+  margin: 10px 0 0;
+  font-size: 13px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+/* Babak 6 */
+.penutup {
+  display: grid;
+  place-content: center;
+  text-align: center;
+  gap: 10px;
+}
+
+.penutup .aksi {
+  justify-content: center;
+}
+
+.terang .br,
+html[data-terang="1"] .isi .br {
+  color: #0d1424;
+}
+
+/* Versi statis (reduced motion / tanpa WebGL): latar per babak, segel CSS, gulir biasa. */
+.segel-statis {
+  display: none !important;
+}
+
+html.statis .babak {
+  height: auto;
+  min-height: 100dvh;
+  background: var(--latar-statis);
+}
+
+html.statis .terang {
+  color: #0d1424;
+}
+
+html.statis .layar {
+  position: relative;
+  height: auto;
+  min-height: 100dvh;
+}
+
+html.statis .segel-statis {
+  display: grid !important;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: min(60vw, 320px);
+  transform: translate(-50%, -50%);
+  opacity: 0.55;
+}
+
+html.statis .ponsel {
+  transform: none;
+}
+
+@media (max-width: 767px) {
+  .babak {
+    height: 150vh;
+  }
+
+  .sudut-kiri-atas,
+  .sudut-kanan-atas {
+    top: 112px;
+  }
+
+  .sudut-kanan-bawah.hud {
+    display: none;
+  }
+
+  .beranda-atas nav {
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0;
+  }
+
+  .ponsel {
+    left: 50%;
+    width: min(240px, 62vw);
+    transform: translate(-50%, calc((1 - var(--naik, 1)) * 55vh));
+  }
+
+  html.statis .ponsel {
+    transform: translateX(-50%);
+  }
+
+  .lapis-bukti,
+  .kartu-beranda {
+    bottom: 24px;
+  }
+}
