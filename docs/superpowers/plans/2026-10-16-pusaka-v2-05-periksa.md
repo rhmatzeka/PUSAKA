@@ -1403,7 +1403,7 @@ export default defineConfig({
   use: { baseURL: `http://127.0.0.1:${PORT}`, channel: 'chrome', trace: 'retain-on-failure' },
   webServer: {
     command: `${ENV} npx astro build && PORT=${PORT} node e2e/server.mjs`,
-    url: `http://127.0.0.1:${PORT}/periksa/`,
+    url: `http://127.0.0.1:${PORT}/`,
     reuseExistingServer: false,
     timeout: 180_000,
   },
