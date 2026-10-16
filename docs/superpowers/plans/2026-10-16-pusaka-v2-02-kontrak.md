@@ -283,11 +283,10 @@ contract TerbitkanTest is Dasar {
         address orang = makeAddr("orang");
         PusakaIjazah.Penerbitan memory p = _penerbitan(DOC, URI);
         bytes memory sig = _ttd(PK_REKTOR, k.digestPenerbitan(p));
+        bytes32 peranOperator = k.OPERATOR_ROLE();
         vm.prank(orang);
         vm.expectRevert(
-            abi.encodeWithSelector(
-                IAccessControl.AccessControlUnauthorizedAccount.selector, orang, k.OPERATOR_ROLE()
-            )
+            abi.encodeWithSelector(IAccessControl.AccessControlUnauthorizedAccount.selector, orang, peranOperator)
         );
         k.terbitkan(p, sig, URI);
     }
