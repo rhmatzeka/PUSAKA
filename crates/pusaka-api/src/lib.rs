@@ -4,7 +4,9 @@
 pub mod config;
 pub mod galat;
 pub mod kunci;
+pub mod layanan;
 pub mod masukan;
+pub mod rantai;
 
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
