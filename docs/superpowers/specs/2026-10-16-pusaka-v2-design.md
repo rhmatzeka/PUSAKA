@@ -237,7 +237,7 @@ Satu kanvas three.js dipin sepanjang halaman (sekitar 7–8 tinggi layar). Objek
 | 6 Penutup putih | pecahan kristal melayang | "Asli atau palsu?" · "Periksa sendiri." + tombol Periksa dan Masuk |
 
 - Tidak menyalin kode, teks, model, atau aset quantumwallet.tech. Yang ditiru hanya koreografi dan teknik.
-- **Fallback:** `prefers-reduced-motion` atau GPU lemah menampilkan versi statis berupa gambar render tiap babak dengan scroll biasa.
+- **Fallback:** `prefers-reduced-motion` atau tanpa WebGL2 menampilkan versi statis: latar per babak dan segel CSS, dengan scroll biasa.
 - **Performa:** three.js dan GSAP hanya dimuat di `/`; LCP berupa teks.
 
 ### 8.3 Masuk (Privy, UI kustom)
