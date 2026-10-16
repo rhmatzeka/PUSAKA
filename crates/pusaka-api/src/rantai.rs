@@ -126,14 +126,16 @@ impl RantaiRpc {
             .json(&json!({ "jsonrpc": "2.0", "id": 1, "method": metode, "params": params }))
             .send()
             .await
-            .map_err(|e| Galat::LayananLuar(format!("RPC tidak terjangkau: {e}")))?;
+            .map_err(|e| {
+                Galat::LayananLuar(format!("RPC tidak terjangkau: {}", e.without_url()))
+            })?;
         if !res.status().is_success() {
             return Err(Galat::LayananLuar(format!("RPC menjawab {}", res.status())));
         }
         let mut v: Value = res
             .json()
             .await
-            .map_err(|e| Galat::LayananLuar(format!("jawaban RPC rusak: {e}")))?;
+            .map_err(|e| Galat::LayananLuar(format!("jawaban RPC rusak: {}", e.without_url())))?;
         if let Some(g) = v.get("error") {
             return Err(Galat::LayananLuar(format!("RPC galat: {g}")));
         }

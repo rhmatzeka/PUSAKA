@@ -74,17 +74,14 @@ impl PrivyHttp {
 
     /// Kirim permintaan; 404 → `None`, sukses → isi, selain itu galat layanan luar.
     async fn kirim(&self, rb: RequestBuilder) -> Result<Option<PenggunaPrivy>, Galat> {
-        let res = rb
-            .send()
-            .await
-            .map_err(|e| Galat::LayananLuar(format!("Privy tidak terjangkau: {e}")))?;
+        let res = rb.send().await.map_err(|e| {
+            Galat::LayananLuar(format!("Privy tidak terjangkau: {}", e.without_url()))
+        })?;
         match res.status() {
             StatusCode::NOT_FOUND => Ok(None),
-            s if s.is_success() => res
-                .json()
-                .await
-                .map(Some)
-                .map_err(|e| Galat::LayananLuar(format!("jawaban Privy rusak: {e}"))),
+            s if s.is_success() => res.json().await.map(Some).map_err(|e| {
+                Galat::LayananLuar(format!("jawaban Privy rusak: {}", e.without_url()))
+            }),
             s => Err(Galat::LayananLuar(format!("Privy menjawab {s}"))),
         }
     }

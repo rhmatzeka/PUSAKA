@@ -154,3 +154,14 @@ async fn privy_mati_jadi_layanan_luar() {
         .await;
     assert!(matches!(r, Err(Galat::LayananLuar(_))));
 }
+
+#[tokio::test]
+async fn galat_jaringan_tidak_membocorkan_url_privy() {
+    let r = klien("http://127.0.0.1:1/RAHASIA".into(), "rahasia")
+        .wallet_pengguna("did:privy:x")
+        .await;
+    match r {
+        Err(Galat::LayananLuar(p)) => assert!(!p.contains("RAHASIA"), "{p}"),
+        lain => panic!("{lain:?}"),
+    }
+}

@@ -69,3 +69,18 @@ async fn cid_kosong_ditolak() {
         .await;
     assert!(matches!(r, Err(Galat::LayananLuar(_))));
 }
+
+#[tokio::test]
+async fn galat_jaringan_tidak_membocorkan_url_pinata() {
+    let r = PinataHttp::baru(
+        reqwest::Client::new(),
+        "http://127.0.0.1:1/RAHASIA".into(),
+        "JWT-UJI".into(),
+    )
+    .unggah("a.bin", vec![1])
+    .await;
+    match r {
+        Err(Galat::LayananLuar(p)) => assert!(!p.contains("RAHASIA"), "{p}"),
+        lain => panic!("{lain:?}"),
+    }
+}

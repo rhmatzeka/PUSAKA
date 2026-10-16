@@ -307,3 +307,28 @@ async fn pejabat_menolak_lalu_operator_mengirim_ulang(pool: PgPool) {
     assert_eq!(b["nim"], "21110009");
     assert_eq!(b["kunci"], ke_hex(&[9; 32]));
 }
+
+#[sqlx::test(migrations = "../../migrations")]
+async fn doc_hash_terdaftar_ditolak_sebelum_memanggil_privy(pool: PgPool) {
+    let u = siapkan(pool);
+    buat_draf(&u, contoh_draf(1, "a@b.id")).await;
+    u.privy
+        .panggilan_alumni
+        .store(0, std::sync::atomic::Ordering::SeqCst);
+    let badan = json!({ "draf": [contoh_draf(2, "baru@b.id"), contoh_draf(1, "a@b.id")] });
+    let (s, b) = panggil(
+        &u.app,
+        "POST",
+        "/api/draf",
+        Some(&token(DID_OPERATOR)),
+        Some(badan),
+    )
+    .await;
+    assert_eq!(s, StatusCode::CONFLICT, "{b}");
+    assert_eq!(
+        u.privy
+            .panggilan_alumni
+            .load(std::sync::atomic::Ordering::SeqCst),
+        0
+    );
+}

@@ -47,17 +47,18 @@ impl Ipfs for PinataHttp {
             .multipart(form)
             .send()
             .await
-            .map_err(|e| Galat::LayananLuar(format!("Pinata tidak terjangkau: {e}")))?;
+            .map_err(|e| {
+                Galat::LayananLuar(format!("Pinata tidak terjangkau: {}", e.without_url()))
+            })?;
         if !res.status().is_success() {
             return Err(Galat::LayananLuar(format!(
                 "Pinata menjawab {}",
                 res.status()
             )));
         }
-        let j: Jawaban = res
-            .json()
-            .await
-            .map_err(|e| Galat::LayananLuar(format!("jawaban Pinata rusak: {e}")))?;
+        let j: Jawaban = res.json().await.map_err(|e| {
+            Galat::LayananLuar(format!("jawaban Pinata rusak: {}", e.without_url()))
+        })?;
         if j.data.cid.is_empty() {
             return Err(Galat::LayananLuar("Pinata tidak mengembalikan CID".into()));
         }

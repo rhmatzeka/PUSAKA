@@ -9,6 +9,7 @@ use crate::galat::Galat;
 use crate::kunci;
 use crate::masukan::token_dari;
 use crate::negara::Negara;
+use crate::rantai::peran_operator;
 
 /// `GET /api/kunci/{token_id}`: kunci AES ijazah untuk pemilik token atau operator.
 pub async fn ambil(
@@ -22,10 +23,17 @@ pub async fn ambil(
         .ok_or_else(|| Galat::TidakDitemukan("ijazah tidak ditemukan".into()))?;
     let pemilik = heks::alamat(&d.penerima)
         .map_err(|_| Galat::Internal("penerima tersimpan rusak".into()))?;
-    if !(p.peran.operator || p.punya_wallet(&pemilik)) {
-        return Err(Galat::PeranTidakCukup(
-            "hanya pemilik ijazah atau operator".into(),
-        ));
+    if !p.punya_wallet(&pemilik) {
+        if !p.peran.operator {
+            return Err(Galat::PeranTidakCukup(
+                "hanya pemilik ijazah atau operator".into(),
+            ));
+        }
+        if !p.punya_peran_langsung(&n, peran_operator()).await? {
+            return Err(Galat::PeranTidakCukup(
+                "peran operator BAAK sudah dicabut".into(),
+            ));
+        }
     }
     db::cek_batas(&n.db, &p.did).await?;
     let bungkus = db::ambil_kunci(&n.db, d.id)

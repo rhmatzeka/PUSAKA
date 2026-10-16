@@ -210,3 +210,14 @@ async fn rpc_tidak_terjangkau_jadi_layanan_luar() {
     let r = klien("http://127.0.0.1:1".into()).receipt([1; 32]).await;
     assert!(matches!(r, Err(Galat::LayananLuar(_))));
 }
+
+#[tokio::test]
+async fn galat_jaringan_tidak_membocorkan_url_rpc() {
+    let r = klien("http://127.0.0.1:1/v2/KUNCI-RAHASIA".into())
+        .receipt([1; 32])
+        .await;
+    match r {
+        Err(Galat::LayananLuar(p)) => assert!(!p.contains("KUNCI-RAHASIA"), "{p}"),
+        lain => panic!("{lain:?}"),
+    }
+}

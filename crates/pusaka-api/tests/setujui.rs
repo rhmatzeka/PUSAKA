@@ -211,3 +211,28 @@ async fn tanda_tangan_kedaluwarsa_mengembalikan_draf(pool: PgPool) {
         "bisa ditandatangani ulang"
     );
 }
+
+#[sqlx::test(migrations = "../../migrations")]
+async fn setujui_dan_tolak_langsung_setelah_kedaluwarsa(pool: PgPool) {
+    let u = siapkan(pool);
+    let d1 = buat_draf(&u, contoh_draf(1, EMAIL_ALUMNI)).await;
+    let d2 = buat_draf(&u, contoh_draf(2, EMAIL_ALUMNI)).await;
+    assert_eq!(setujui(&u, &d1).await.0, StatusCode::OK);
+    assert_eq!(setujui(&u, &d2).await.0, StatusCode::OK);
+    sqlx::query("update tanda_tangan set batas_waktu = now() - interval '1 second'")
+        .execute(&u.db)
+        .await
+        .unwrap();
+    // Tanpa GET daftar/detail lebih dulu.
+    assert_eq!(setujui(&u, &d1).await.0, StatusCode::OK);
+    let tolak = format!("/api/draf/{}/tolak", d2["id"].as_str().unwrap());
+    let (s, b) = panggil(
+        &u.app,
+        "POST",
+        &tolak,
+        Some(&token(DID_REKTOR)),
+        Some(json!({ "alasan": "data salah" })),
+    )
+    .await;
+    assert_eq!(s, StatusCode::OK, "{b}");
+}

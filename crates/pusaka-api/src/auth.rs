@@ -132,6 +132,33 @@ impl Pengguna {
     pub fn punya_wallet(&self, alamat: &[u8; 20]) -> bool {
         self.wallet.contains(alamat)
     }
+
+    /// Ada wallet pengguna yang memegang `peran` saat ini (dibaca langsung on-chain, tanpa cache).
+    pub async fn punya_peran_langsung(&self, n: &Negara, peran: [u8; 32]) -> Result<bool, Galat> {
+        for w in &self.wallet {
+            if n.rantai.punya_peran(peran, *w).await? {
+                return Ok(true);
+            }
+        }
+        Ok(false)
+    }
+
+    /// Untuk aksi yang membuka kunci ijazah: peran operator/pejabat dari cache sesi
+    /// dipastikan masih berlaku on-chain.
+    pub async fn wajib_peran_langsung(&self, n: &Negara) -> Result<(), Galat> {
+        let operator =
+            self.peran.operator && self.punya_peran_langsung(n, peran_operator()).await?;
+        let pejabat = !operator
+            && self.peran.penandatangan
+            && self.punya_peran_langsung(n, peran_penandatangan()).await?;
+        if operator || pejabat {
+            Ok(())
+        } else {
+            Err(Galat::PeranTidakCukup(
+                "peran Anda sudah dicabut di blockchain".into(),
+            ))
+        }
+    }
 }
 
 async fn muat_sesi(n: &Negara, did: &str) -> Result<DataSesi, Galat> {

@@ -75,6 +75,14 @@ pub async fn buat(
         }
     }
     db::cek_batas(&n.db, &p.did).await?;
+    // Tolak doc_hash yang sudah terdaftar sebelum membuat akun Privy apa pun.
+    let semua: Vec<[u8; 32]> = sah.iter().map(|d| d.doc_hash).collect();
+    if let Some(h) = db::doc_hash_terdaftar(&n.db, &semua).await? {
+        return Err(Galat::Konflik(format!(
+            "doc_hash {} sudah pernah didaftarkan",
+            ke_hex(&h)
+        )));
+    }
 
     let mut penerima = Vec::with_capacity(sah.len());
     for d in &sah {
@@ -143,6 +151,7 @@ pub async fn detail(
     Path(id): Path<String>,
 ) -> Result<Json<Value>, Galat> {
     p.wajib_operator_atau_penandatangan()?;
+    p.wajib_peran_langsung(&n).await?;
     db::kedaluwarsakan(&n.db).await?;
     let id = id_dari(&id)?;
     let d = db::ambil_draf(&n.db, id)
@@ -169,6 +178,7 @@ pub async fn tolak(
     let id = id_dari(&id)?;
     let alasan = validasi::alasan(&b.alasan).map_err(Galat::InputTidakValid)?;
     db::cek_batas(&n.db, &p.did).await?;
+    db::kedaluwarsakan(&n.db).await?;
     let mut tx = n.db.begin().await?;
     if !db::tolak_draf(&mut *tx, id, &alasan).await? {
         drop(tx);
@@ -234,6 +244,7 @@ pub async fn setujui(
     let id = id_dari(&id)?;
     let batas = ttd_rute::cek_batas_waktu(b.batas_waktu, ttd_rute::sekarang())?;
     db::cek_batas(&n.db, &p.did).await?;
+    db::kedaluwarsakan(&n.db).await?;
     let d = db::ambil_draf(&n.db, id)
         .await?
         .ok_or_else(|| Galat::TidakDitemukan("draf tidak ditemukan".into()))?;

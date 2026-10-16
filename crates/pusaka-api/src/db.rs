@@ -252,6 +252,20 @@ pub async fn daftar_draf(
     Ok(Halaman { data, total })
 }
 
+/// `doc_hash` pertama dari `daftar` yang sudah ada di tabel draf.
+pub async fn doc_hash_terdaftar(
+    db: &PgPool,
+    daftar: &[[u8; 32]],
+) -> Result<Option<[u8; 32]>, Galat> {
+    let semua: Vec<Vec<u8>> = daftar.iter().map(|h| h.to_vec()).collect();
+    let ada: Option<Vec<u8>> =
+        sqlx::query_scalar("select doc_hash from draf where doc_hash = any($1) limit 1")
+            .bind(semua)
+            .fetch_optional(db)
+            .await?;
+    Ok(ada.and_then(|h| h.try_into().ok()))
+}
+
 pub async fn status_draf(db: &PgPool, id: Uuid) -> Result<Option<String>, Galat> {
     Ok(sqlx::query_scalar("select status from draf where id = $1")
         .bind(id)
