@@ -1,0 +1,7 @@
+# File hasil generate/vendor tidak dihitung di statistik bahasa GitHub
+Cargo.lock                linguist-generated=true
+web/package-lock.json     linguist-generated=true
+abi/**                    linguist-generated=true
+web/src/wasm/**           linguist-generated=true
+contracts/lib/**          linguist-vendored=true
+docs/**                   linguist-documentation=true
