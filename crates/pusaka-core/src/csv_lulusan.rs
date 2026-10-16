@@ -49,6 +49,10 @@ pub enum GalatCsv {
     TerlaluBanyak(usize),
     #[error("CSV rusak: {0}")]
     Rusak(String),
+    #[error(
+        "pemisah kolom harus koma (,), bukan titik koma (;). Di Excel pilih \"CSV UTF-8 (dipisahkan koma)\""
+    )]
+    PemisahTitikKoma,
 }
 
 pub fn baca(teks: &str) -> Result<HasilCsv, GalatCsv> {
@@ -65,6 +69,9 @@ pub fn baca(teks: &str) -> Result<HasilCsv, GalatCsv> {
         .clone();
     if kepala.is_empty() || kepala.iter().all(str::is_empty) {
         return Err(GalatCsv::Kosong);
+    }
+    if kepala.len() == 1 && kepala.get(0).is_some_and(|k| k.contains(';')) {
+        return Err(GalatCsv::PemisahTitikKoma);
     }
     if kepala.len() != KOLOM.len() || kepala.iter().zip(KOLOM).any(|(a, b)| a != b) {
         return Err(GalatCsv::KolomSalah {
@@ -106,6 +113,9 @@ fn periksa_baris(
     nim_terpakai: &mut HashSet<String>,
     nomor_terpakai: &mut HashSet<String>,
 ) -> Result<BarisLulusan, String> {
+    if r.len() != KOLOM.len() {
+        return Err(format!("harus {} kolom, ada {}", KOLOM.len(), r.len()));
+    }
     let ambil = |i: usize| r.get(i).unwrap_or("").to_string();
     let [
         nama,
@@ -145,12 +155,15 @@ fn periksa_baris(
     if !file_pdf.to_ascii_lowercase().ends_with(".pdf") {
         return Err("file_pdf harus berkas PDF".into());
     }
-    if !nim_terpakai.insert(nim.clone()) {
+    // Periksa dulu, catat belakangan: baris yang ditolak tidak boleh "memesan" NIM/nomor.
+    if nim_terpakai.contains(&nim) {
         return Err(format!("NIM {nim} ganda di berkas ini"));
     }
-    if !nomor_terpakai.insert(nomor_ijazah.clone()) {
+    if nomor_terpakai.contains(&nomor_ijazah) {
         return Err(format!("nomor ijazah {nomor_ijazah} ganda di berkas ini"));
     }
+    nim_terpakai.insert(nim.clone());
+    nomor_terpakai.insert(nomor_ijazah.clone());
     Ok(BarisLulusan {
         nomor_baris,
         data: DataLulusan {
@@ -166,16 +179,29 @@ fn periksa_baris(
     })
 }
 
+/// `YYYY-MM-DD` dengan tanggal kalender yang benar (tahun ≥ 1900, kabisat diperhitungkan).
 fn tanggal_valid(s: &str) -> bool {
     let b = s.as_bytes();
-    if b.len() != 10 || b[4] != b'-' || b[7] != b'-' {
+    let pola_ok = b.len() == 10
+        && b[4] == b'-'
+        && b[7] == b'-'
+        && b.iter()
+            .enumerate()
+            .all(|(i, c)| i == 4 || i == 7 || c.is_ascii_digit());
+    if !pola_ok {
         return false;
     }
-    let angka = |r: std::ops::Range<usize>| s[r].parse::<u32>().ok();
-    match (angka(0..4), angka(5..7), angka(8..10)) {
-        (Some(_), Some(m), Some(d)) => (1..=12).contains(&m) && (1..=31).contains(&d),
-        _ => false,
-    }
+    let angka = |r: std::ops::Range<usize>| s[r].parse::<u32>().unwrap_or(0);
+    let (tahun, bulan, hari) = (angka(0..4), angka(5..7), angka(8..10));
+    let kabisat = (tahun % 4 == 0 && tahun % 100 != 0) || tahun % 400 == 0;
+    let maks_hari = match bulan {
+        1 | 3 | 5 | 7 | 8 | 10 | 12 => 31,
+        4 | 6 | 9 | 11 => 30,
+        2 if kabisat => 29,
+        2 => 28,
+        _ => return false,
+    };
+    tahun >= 1900 && (1..=maks_hari).contains(&hari)
 }
 
 fn email_valid(s: &str) -> bool {

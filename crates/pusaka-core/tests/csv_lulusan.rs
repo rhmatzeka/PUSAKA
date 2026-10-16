@@ -112,3 +112,66 @@ fn lebih_dari_maks_ditolak() {
         Some(GalatCsv::TerlaluBanyak(MAKS_BARIS + 1))
     );
 }
+
+// ---- temuan review rencana 03 ----
+
+fn satu(tanggal: &str) -> pusaka_core::csv_lulusan::HasilCsv {
+    baca(&format!(
+        "{KEPALA}\nA,231011402890,TI,S.Kom,1/U/2026,{tanggal},a@b.id,a.pdf\n"
+    ))
+    .unwrap()
+}
+
+#[test]
+fn tanggal_kalender_diperiksa() {
+    for salah in [
+        "2027-02-31",
+        "2027-04-31",
+        "2027-02-29",
+        "2027-+2-+5",
+        "+202-02-10",
+        "0000-01-01",
+        "2027-13-01",
+    ] {
+        assert_eq!(satu(salah).baris.len(), 0, "{salah} seharusnya ditolak");
+    }
+    for benar in ["2028-02-29", "2027-12-31", "2000-02-29"] {
+        assert_eq!(satu(benar).baris.len(), 1, "{benar} seharusnya diterima");
+    }
+}
+
+#[test]
+fn kolom_berlebih_per_baris_ditolak() {
+    let h = baca(&format!(
+        "{KEPALA}\nA,231011402890,TI,S.Kom,1/U/2026,2027-02-20,a@b.id,a.pdf,lebih\n"
+    ))
+    .unwrap();
+    assert!(h.baris.is_empty());
+    assert!(h.galat[0].pesan.contains("8 kolom"));
+}
+
+#[test]
+fn pemisah_titik_koma_diberi_pesan_jelas() {
+    let teks = "nama;nim;prodi;gelar;nomor_ijazah;tanggal_lulus;email;file_pdf\nA;1;TI;S.Kom;1;2027-02-20;a@b.id;a.pdf\n";
+    assert_eq!(baca(teks).err(), Some(GalatCsv::PemisahTitikKoma));
+}
+
+#[test]
+fn baris_ditolak_tidak_memesan_nim() {
+    let teks = format!(
+        "{KEPALA}\n{}\n{}\n{}\n",
+        baris("A", "231011402890", "1/UNPAM/2026", "a@b.id"),
+        baris("B", "231011402891", "1/UNPAM/2026", "b@b.id"),
+        baris("C", "231011402891", "3/UNPAM/2026", "c@c.id"),
+    );
+    let h = baca(&teks).unwrap();
+    assert_eq!(h.galat.len(), 1, "{:?}", h.galat);
+    assert_eq!(h.galat[0].nomor_baris, 3);
+    assert_eq!(
+        h.baris
+            .iter()
+            .map(|b| b.data.nama.as_str())
+            .collect::<Vec<_>>(),
+        ["A", "C"]
+    );
+}

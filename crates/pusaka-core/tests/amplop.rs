@@ -82,3 +82,16 @@ fn header_terlalu_besar_ditolak() {
         Some(GalatAmplop::HeaderTerlaluBesar)
     );
 }
+
+#[test]
+fn byte_versi_diautentikasi_sebagai_aad() {
+    use aes_gcm::aead::{Aead, KeyInit};
+    use aes_gcm::{Aes256Gcm, Key, Nonce};
+    let a = segel(&KUNCI, &NONCE, &data("A"), b"pdf").unwrap();
+    let tanpa_aad = Aes256Gcm::new(Key::<Aes256Gcm>::from_slice(&KUNCI))
+        .decrypt(Nonce::from_slice(&a[1..13]), &a[13..]);
+    assert!(
+        tanpa_aad.is_err(),
+        "amplop harus mengikat byte versi sebagai AAD"
+    );
+}

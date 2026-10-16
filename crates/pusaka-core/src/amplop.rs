@@ -1,7 +1,11 @@
 //! Amplop terenkripsi berkas ijazah:
-//! `0x01 ‖ nonce(12) ‖ AES-256-GCM( u32BE(panjang header) ‖ header JSON ‖ PDF )`.
+//! `0x01 ‖ nonce(12) ‖ AES-256-GCM( u32BE(panjang header) ‖ header JSON ‖ PDF )`,
+//! dengan byte versi diikat sebagai AAD.
+//!
+//! Kunci WAJIB unik per ijazah dan nonce WAJIB acak (`crypto.getRandomValues`, 12 byte).
+//! Memakai ulang pasangan kunci+nonce membuka isi amplop.
 
-use aes_gcm::aead::{Aead, KeyInit};
+use aes_gcm::aead::{Aead, KeyInit, Payload};
 use aes_gcm::{Aes256Gcm, Key, Nonce};
 use serde::{Deserialize, Serialize};
 
@@ -63,7 +67,13 @@ pub fn segel(
     isi.extend_from_slice(pdf);
 
     let rahasia = cipher(kunci)
-        .encrypt(Nonce::from_slice(nonce), isi.as_slice())
+        .encrypt(
+            Nonce::from_slice(nonce),
+            Payload {
+                msg: &isi,
+                aad: &[VERSI],
+            },
+        )
         .map_err(|_| GalatAmplop::GagalEnkripsi)?;
     let mut out = Vec::with_capacity(1 + PANJANG_NONCE + rahasia.len());
     out.push(VERSI);
@@ -81,7 +91,13 @@ pub fn buka(kunci: &[u8; 32], amplop: &[u8]) -> Result<IsiAmplop, GalatAmplop> {
     }
     let (nonce, rahasia) = amplop[1..].split_at(PANJANG_NONCE);
     let isi = cipher(kunci)
-        .decrypt(Nonce::from_slice(nonce), rahasia)
+        .decrypt(
+            Nonce::from_slice(nonce),
+            Payload {
+                msg: rahasia,
+                aad: &amplop[..1],
+            },
+        )
         .map_err(|_| GalatAmplop::GagalDekripsi)?;
 
     let (awal, sisa) = isi.split_at_checked(4).ok_or(GalatAmplop::HeaderRusak)?;

@@ -128,6 +128,8 @@ byte 13..    ciphertext + tag (128 bit) dari:
                byte PDF asli
 ```
 
+- **AAD:** byte versi diikat sebagai *additional authenticated data* AES-GCM, sehingga versi tidak bisa ditukar tanpa ketahuan.
+- **Nonce:** wajib acak 12 byte (`crypto.getRandomValues`); pasangan kunci+nonce tidak boleh dipakai ulang.
 - **Kunci:** 32 byte acak per ijazah, dibuat di peramban operator. Kunci dikirim di tautan sebagai base64url di fragmen: `/i/{tokenId}#k={kunci}`.
 - **Pemeriksaan berlapis:** setelah dekripsi, peramban menghitung Keccak-256 PDF hasil dekripsi dan wajib sama dengan `docHash` on-chain. Ini membuktikan berkas di IPFS tidak ditukar.
 
