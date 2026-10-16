@@ -545,3 +545,14 @@ pub async fn selesaikan_cabut(
         .await?;
     Ok(true)
 }
+
+/// Ijazah yang sudah tercatat (TERBIT/DICABUT) milik salah satu wallet pengguna.
+pub async fn ijazah_milik(db: &PgPool, wallet: &[String]) -> Result<Vec<BarisDraf>, Galat> {
+    Ok(sqlx::query_as(concat!(
+        pilih_draf!(),
+        "where d.penerima = any($1) and d.token_id is not null order by d.token_id"
+    ))
+    .bind(wallet)
+    .fetch_all(db)
+    .await?)
+}
