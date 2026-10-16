@@ -14,14 +14,21 @@ docs/               spesifikasi dan rencana
 ## Jalankan di laptop
 
 ```bash
-cargo run -p pusaka-api          # API di 127.0.0.1:8787
+cp .env.example .env.local                 # isi nilainya
+eval "$(scripts/db-uji.sh)"                # atau DATABASE_URL ke Postgres lain
+cargo run -p pusaka-api -- migrasi         # buat tabel
+cargo run -p pusaka-api                    # API di 127.0.0.1:8787
 npm --prefix web install
-npm --prefix web run dev         # http://localhost:4321 (proxy /api ke Rust)
+npm --prefix web run dev                   # http://localhost:4321 (proxy /api ke Rust)
 ```
+
+Tanpa `.env.local` lengkap, API tetap jalan dan setiap `/api/*` menjawab 503
+`KONFIGURASI_TIDAK_LENGKAP` berisi nama env yang kurang.
 
 ## Uji
 
 ```bash
+eval "$(scripts/db-uji.sh)"                # Postgres sementara (Docker) untuk tes API
 cargo test --workspace
 npm --prefix web run check
 ```

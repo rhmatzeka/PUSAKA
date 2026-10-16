@@ -77,3 +77,24 @@ async fn metode_tidak_diizinkan() -> impl IntoResponse {
         }),
     )
 }
+
+/// Router lengkap dari env. Bila env belum lengkap/valid, router darurat yang
+/// menjelaskan env apa yang kurang (kesehatan tetap jalan).
+pub fn router_dari_env() -> Router {
+    match config::Konfigurasi::dari_env().and_then(negara::Negara::dari_konfigurasi) {
+        Ok(n) => router(n),
+        Err(e) => {
+            tracing::error!(galat = %e, "konfigurasi tidak lengkap");
+            router_darurat(e.to_string())
+        }
+    }
+}
+
+/// Log `tracing` ke stdout (dibaca Vercel). Aman dipanggil lebih dari sekali.
+pub fn pasang_log() {
+    let _ = tracing_subscriber::fmt()
+        .with_env_filter(
+            tracing_subscriber::EnvFilter::try_from_default_env().unwrap_or_else(|_| "info".into()),
+        )
+        .try_init();
+}
