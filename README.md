@@ -1,6 +1,6 @@
 # PUSAKA
 
-Sistem verifikasi ijazah digital UNPAM berbasis smart contract ERC-721 (soulbound) + IPFS, dengan hash Keccak-256 dan tanda tangan ECDSA. Rancangan lengkapnya ada di `~/Skripsi/PLAN-PUSAKA.md`.
+Sistem verifikasi ijazah digital UNPAM berbasis smart contract ERC-721 (soulbound) + IPFS, dengan hash Keccak-256 dan tanda tangan ECDSA. Rancangan lengkapnya ada di `~/Skripsi/PLAN-PUSAKA.md`
 
 ```
 pusaka/
